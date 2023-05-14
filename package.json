@@ -6,6 +6,7 @@
   "description": "",
   "scripts": {
     "install": "npm --prefix ./core-contracts run build",
+    "test": "npm --prefix ./core-contracts run test",
     "compile-contracts": "npm --prefix ./core-contracts run compile",
     "generate-types": "npm --prefix ./core-contracts run generate-types",
     "deploy-contracts": "npm --prefix ./core-contracts run deploy-sepolia"

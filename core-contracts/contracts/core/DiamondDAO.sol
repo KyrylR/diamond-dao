@@ -48,8 +48,6 @@ contract DiamondDAO is IDiamondCut, DiamondDAOStorage {
         }
     }
 
-    receive() external payable {}
-
     function transferOwnership(address newOwner_) public onlyOwner {
         require(newOwner_ != address(0), "LibDiamondDAO: zero address owner");
 

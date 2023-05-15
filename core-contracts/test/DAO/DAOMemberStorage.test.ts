@@ -4,19 +4,23 @@ import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 import { Reverter } from "@/test/helpers/reverter";
-import { wei } from "@/scripts/utils/utils";
 
 import {
-  DAO_REGISTRY_NAME,
   DAO_MEMBER_STORAGE_NAME,
   CREATE_PERMISSION,
   DELETE_PERMISSION,
-  MASTER_ROLE,
-  EXPERTS_VOTING_NAME,
-  getDAOPanelResource,
+  VOTING_NAME,
+  DAO_RESERVED_NAME,
+  DAO_PERMISSION_MANAGER_NAME,
 } from "../utils/constants";
 
-import { PermissionManager, DAOMemberStorage } from "@ethers-v5";
+import { PermissionManager, DAOMemberStorage, DiamondDAO, IRBAC } from "@ethers-v5";
+
+import {
+  buildFaucetCutsFromFuncSigs,
+  DAOMemberStorageFuncSigs,
+  PermissionManagerFuncSigs,
+} from "@/test/utils/faucetCuts";
 
 describe("DAOMemberStorage", () => {
   const reverter = new Reverter();
@@ -26,11 +30,9 @@ describe("DAOMemberStorage", () => {
   let USER2: SignerWithAddress;
   let USER3: SignerWithAddress;
 
-  const targetPanel = "Test Panel";
-
+  let diamond: DiamondDAO;
   let manager: PermissionManager;
   let daoMemberStorage: DAOMemberStorage;
-  let daoMemberStorageResource: string;
 
   const DAOMemberStorageCreateRole = "SCR";
   const DAOMemberStorageDeleteRole = "SDR";
@@ -38,40 +40,45 @@ describe("DAOMemberStorage", () => {
   before("setup", async () => {
     [OWNER, USER1, USER2, USER3] = await ethers.getSigners();
 
-    daoMemberStorage = await DAOMemberStorage.new();
+    const DiamondDAO = await ethers.getContractFactory("DiamondDAO");
+    diamond = await DiamondDAO.deploy();
 
-    await registry.__DAORegistry_init(
-      (
-        await PermissionManager.new()
-      ).address,
-      OWNER,
-      targetPanel,
-      DAO_REGISTRY_NAME,
-      "daoURI"
-    );
+    const DAOMemberStorage = await ethers.getContractFactory("DAOMemberStorage");
+    daoMemberStorage = await DAOMemberStorage.deploy();
 
-    await registry.addPanel(targetPanel);
+    const PermissionManager = await ethers.getContractFactory("PermissionManager");
+    manager = await PermissionManager.deploy();
 
-    manager = await PermissionManager.at(await registry.getPermissionManager());
+    const memberStorageFaucetCuts = buildFaucetCutsFromFuncSigs(DAOMemberStorageFuncSigs, daoMemberStorage.address, 0);
+    const permissionManagerFaucetCuts = buildFaucetCutsFromFuncSigs(PermissionManagerFuncSigs, manager.address, 0);
 
-    await manager.confMemberGroup(registry.address, EXPERTS_VOTING_NAME, targetPanel);
-    await manager.confExpertsGroups(EXPERTS_VOTING_NAME, targetPanel);
+    await diamond.diamondCut(memberStorageFaucetCuts, ethers.constants.AddressZero, "0x");
+    await diamond.diamondCut(permissionManagerFaucetCuts, ethers.constants.AddressZero, "0x");
 
-    daoMemberStorageResource = getDAOPanelResource(DAO_MEMBER_STORAGE_NAME, targetPanel);
-    await registry.addProxyContract(daoMemberStorageResource, daoMemberStorage.address);
+    daoMemberStorage = await DAOMemberStorage.attach(diamond.address);
+    manager = await PermissionManager.attach(diamond.address);
 
-    daoMemberStorage = await DAOMemberStorage.at(await registry.getContract(daoMemberStorageResource));
+    await manager.__PermissionManager_init(OWNER.address, DAO_PERMISSION_MANAGER_NAME, DAO_RESERVED_NAME);
+    await daoMemberStorage.__DAOMemberStorage_init(DAO_RESERVED_NAME, DAO_MEMBER_STORAGE_NAME);
 
-    await daoMemberStorage.__DAOMemberStorage_init(targetPanel, daoMemberStorageResource);
-    await registry.injectDependencies(daoMemberStorageResource);
+    await manager.confMemberGroup(VOTING_NAME, DAO_RESERVED_NAME);
+    await manager.confExpertsGroups(VOTING_NAME, DAO_RESERVED_NAME);
 
-    const DAOMemberStorageCreate = [daoMemberStorageResource, [CREATE_PERMISSION]];
-    const DAOMemberStorageDelete = [daoMemberStorageResource, [DELETE_PERMISSION]];
+    const DAOMemberStorageCreate: IRBAC.ResourceWithPermissionsStruct[] = [
+      {
+        resource: DAO_MEMBER_STORAGE_NAME,
+        permissions: [CREATE_PERMISSION],
+      },
+    ];
+    const DAOMemberStorageDelete: IRBAC.ResourceWithPermissionsStruct[] = [
+      {
+        resource: DAO_MEMBER_STORAGE_NAME,
+        permissions: [DELETE_PERMISSION],
+      },
+    ];
 
-    await manager.addPermissionsToRole(DAOMemberStorageCreateRole, [DAOMemberStorageCreate], true);
-    await manager.addPermissionsToRole(DAOMemberStorageDeleteRole, [DAOMemberStorageDelete], true);
-
-    await manager.grantRoles(daoMemberStorage.address, [MASTER_ROLE]);
+    await manager.addPermissionsToRole(DAOMemberStorageCreateRole, DAOMemberStorageCreate, true);
+    await manager.addPermissionsToRole(DAOMemberStorageDeleteRole, DAOMemberStorageDelete, true);
 
     await reverter.snapshot();
   });
@@ -79,129 +86,91 @@ describe("DAOMemberStorage", () => {
   afterEach("revert", reverter.revert);
 
   describe("access", () => {
-    it("only injector should set dependencies", async () => {
-      await truffleAssert.reverts(
-        daoMemberStorage.setDependencies(registry.address, "0x", { from: USER1 }),
-        "Dependant: not an injector"
-      );
-    });
-
     it("should initialize only once", async () => {
-      await truffleAssert.reverts(
-        daoMemberStorage.__DAOMemberStorage_init(targetPanel, ""),
-        "Initializable: contract is already initialized"
+      await expect(daoMemberStorage.__DAOMemberStorage_init(DAO_RESERVED_NAME, "")).to.be.revertedWith(
+        "DAOMemberStorage: already initialized"
       );
     });
   });
 
   describe("addMember/addMembers", () => {
     it("should add Member only with create permission", async () => {
-      await truffleAssert.reverts(
-        daoMemberStorage.addMember(USER1, { from: USER1 }),
-        "[QGDK-004000]-The sender is not allowed to perform the action, access denied."
+      await expect(daoMemberStorage.connect(USER1).addMember(USER1.address)).to.be.revertedWith(
+        "DAOMemberStorage: The sender is not allowed to perform the action, access denied."
       );
 
-      await manager.grantRoles(USER1, [DAOMemberStorageCreateRole]);
+      await manager.grantRoles(USER1.address, [DAOMemberStorageCreateRole]);
 
-      assert.deepEqual(await registry.getAccountStatuses(USER1), [
-        ["DAO Token Holder", "DAOGroup:Test Panel"],
-        [false, false],
-      ]);
+      await daoMemberStorage.connect(USER1).addMember(USER1.address);
 
-      await truffleAssert.passes(daoMemberStorage.addMember(USER1, { from: USER1 }), "passes");
+      expect(await daoMemberStorage.getMembers()).to.be.deep.equal([USER1.address]);
+      expect(await daoMemberStorage.getMembersCount()).to.be.equal(1);
 
-      assert.deepEqual(await registry.getAccountStatuses(USER1), [
-        ["DAO Token Holder", "DAOGroup:Test Panel"],
-        [false, true],
-      ]);
+      expect(await daoMemberStorage.isMember(USER1.address)).to.be.true;
+      expect(await daoMemberStorage.isMember(USER2.address)).to.be.false;
 
-      assert.deepEqual(await daoMemberStorage.getMembers(), [USER1]);
-      assert.equal(await daoMemberStorage.getMembersCount(), 1);
-
-      assert.isTrue(await daoMemberStorage.isMember(USER1));
-      assert.isFalse(await daoMemberStorage.isMember(USER2));
-
-      assert.deepEqual(await manager.getUserGroups(USER1), ["DAOExpertVotingGroup:Test Panel"]);
+      expect(await manager.getUserGroups(USER1.address)).to.be.deep.equal(["DAOExpertVotingGroup:DAO Token Holder"]);
     });
 
     it("should add Members only with create permission", async () => {
-      await truffleAssert.reverts(
-        daoMemberStorage.addMembers([USER1, USER2, USER3], { from: USER1 }),
-        "[QGDK-004000]-The sender is not allowed to perform the action, access denied."
-      );
+      await expect(
+        daoMemberStorage.connect(USER1).addMembers([USER1.address, USER2.address, USER3.address])
+      ).to.be.revertedWith("DAOMemberStorage: The sender is not allowed to perform the action, access denied.");
 
-      await manager.grantRoles(USER1, [DAOMemberStorageCreateRole]);
+      await manager.grantRoles(USER1.address, [DAOMemberStorageCreateRole]);
 
-      await truffleAssert.passes(daoMemberStorage.addMembers([USER1, USER2, USER3], { from: USER1 }), "passes");
+      await daoMemberStorage.connect(USER1).addMembers([USER1.address, USER2.address, USER3.address]);
 
-      assert.deepEqual(await daoMemberStorage.getMembers(), [USER1, USER2, USER3]);
+      expect(await daoMemberStorage.getMembers()).to.be.deep.equal([USER1.address, USER2.address, USER3.address]);
 
-      assert.deepEqual(await manager.getUserGroups(USER1), ["DAOExpertVotingGroup:Test Panel"]);
-      assert.deepEqual(await manager.getUserGroups(USER2), ["DAOExpertVotingGroup:Test Panel"]);
-      assert.deepEqual(await manager.getUserGroups(USER3), ["DAOExpertVotingGroup:Test Panel"]);
+      expect(await manager.getUserGroups(USER1.address)).to.be.deep.equal(["DAOExpertVotingGroup:DAO Token Holder"]);
+      expect(await manager.getUserGroups(USER2.address)).to.be.deep.equal(["DAOExpertVotingGroup:DAO Token Holder"]);
+      expect(await manager.getUserGroups(USER3.address)).to.be.deep.equal(["DAOExpertVotingGroup:DAO Token Holder"]);
     });
   });
 
   describe("removeMember/removeMembers", () => {
     beforeEach(async () => {
-      await daoMemberStorage.addMembers([USER1, USER2, USER3], { from: OWNER });
+      await daoMemberStorage.addMembers([USER1.address, USER2.address, USER3.address]);
+      expect(await daoMemberStorage.isMember(USER1.address)).to.be.true;
+      expect(await daoMemberStorage.isMember(USER2.address)).to.be.true;
+      expect(await daoMemberStorage.isMember(USER3.address)).to.be.true;
     });
 
     it("should remove Member only with delete permission", async () => {
-      await truffleAssert.reverts(
-        daoMemberStorage.removeMember(USER2, { from: USER1 }),
-        "[QGDK-004000]-The sender is not allowed to perform the action, access denied."
+      await expect(daoMemberStorage.connect(USER1).removeMember(USER2.address)).to.be.revertedWith(
+        "DAOMemberStorage: The sender is not allowed to perform the action, access denied."
       );
 
-      await manager.grantRoles(USER1, [DAOMemberStorageDeleteRole]);
+      await manager.grantRoles(USER1.address, [DAOMemberStorageDeleteRole]);
 
-      assert.isTrue(await daoMemberStorage.isMember(USER2));
-      assert.deepEqual(await manager.getUserGroups(USER2), ["DAOExpertVotingGroup:Test Panel"]);
+      expect(await daoMemberStorage.isMember(USER2.address)).to.be.true;
+      expect(await manager.getUserGroups(USER2.address)).to.be.deep.equal(["DAOExpertVotingGroup:DAO Token Holder"]);
 
-      await truffleAssert.passes(daoMemberStorage.removeMember(USER2, { from: USER1 }), "passes");
-      assert.isFalse(await daoMemberStorage.isMember(USER2));
+      await daoMemberStorage.connect(USER1).removeMember(USER2.address);
+      expect(await daoMemberStorage.isMember(USER2.address)).to.be.false;
 
-      assert.deepEqual(await daoMemberStorage.getMembers(), [USER1, USER3]);
-      assert.deepEqual(await manager.getUserGroups(USER2), []);
+      expect(await daoMemberStorage.getMembers()).to.be.deep.equal([USER1.address, USER3.address]);
+      expect(await manager.getUserGroups(USER2.address)).to.be.deep.equal([]);
     });
 
     it("should remove Members only with delete permission", async () => {
-      await truffleAssert.reverts(
-        daoMemberStorage.removeMembers([USER2, USER3], { from: USER1 }),
-        "[QGDK-004000]-The sender is not allowed to perform the action, access denied."
+      await expect(daoMemberStorage.connect(USER1).removeMembers([USER2.address, USER3.address])).to.be.revertedWith(
+        "DAOMemberStorage: The sender is not allowed to perform the action, access denied."
       );
 
-      await manager.grantRoles(USER1, [DAOMemberStorageDeleteRole]);
+      await manager.grantRoles(USER1.address, [DAOMemberStorageDeleteRole]);
 
-      assert.isTrue(await daoMemberStorage.isMember(USER2));
-      assert.deepEqual(await manager.getUserGroups(USER2), ["DAOExpertVotingGroup:Test Panel"]);
+      expect(await daoMemberStorage.isMember(USER2.address)).to.be.true;
+      expect(await manager.getUserGroups(USER2.address)).to.be.deep.equal(["DAOExpertVotingGroup:DAO Token Holder"]);
 
-      assert.deepEqual(await daoMemberStorage.getMembers(), [USER1, USER2, USER3]);
-      await truffleAssert.passes(daoMemberStorage.removeMembers([USER2, USER3], { from: USER1 }), "passes");
-      assert.isFalse(await daoMemberStorage.isMember(USER2));
+      expect(await daoMemberStorage.getMembers()).to.be.deep.equal([USER1.address, USER2.address, USER3.address]);
+      await daoMemberStorage.connect(USER1).removeMembers([USER2.address, USER3.address]);
+      expect(await daoMemberStorage.isMember(USER2.address)).to.be.false;
 
-      assert.deepEqual(await daoMemberStorage.getMembers(), [USER1]);
-      assert.deepEqual(await manager.getUserGroups(USER2), []);
-      assert.deepEqual(await manager.getUserGroups(USER1), ["DAOExpertVotingGroup:Test Panel"]);
-    });
-  });
-
-  describe("checkPermission", () => {
-    it("should check permission", async () => {
-      assert.equal(await daoMemberStorage.getResource(), await daoMemberStorage.DAO_MEMBER_STORAGE_RESOURCE());
-
-      assert.isFalse(await daoMemberStorage.checkPermission(USER1, CREATE_PERMISSION));
-      assert.isFalse(await daoMemberStorage.checkPermission(USER1, DELETE_PERMISSION));
-
-      await manager.grantRoles(USER1, [DAOMemberStorageCreateRole]);
-
-      assert.isTrue(await daoMemberStorage.checkPermission(USER1, CREATE_PERMISSION));
-      assert.isFalse(await daoMemberStorage.checkPermission(USER1, DELETE_PERMISSION));
-
-      await manager.grantRoles(USER1, [DAOMemberStorageDeleteRole]);
-
-      assert.isTrue(await daoMemberStorage.checkPermission(USER1, CREATE_PERMISSION));
-      assert.isTrue(await daoMemberStorage.checkPermission(USER1, DELETE_PERMISSION));
+      expect(await daoMemberStorage.getMembers()).to.be.deep.equal([USER1.address]);
+      expect(await manager.getUserGroups(USER2.address)).to.be.deep.equal([]);
+      expect(await manager.getUserGroups(USER1.address)).to.be.deep.equal(["DAOExpertVotingGroup:DAO Token Holder"]);
     });
   });
 });

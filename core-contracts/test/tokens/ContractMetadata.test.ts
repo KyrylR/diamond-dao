@@ -1,25 +1,18 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-
 import { Reverter } from "@/test/helpers/reverter";
-import { wei } from "@/scripts/utils/utils";
 
-import { getParameter, ParameterType } from "../utils/constants";
-
-import { cast } from "@/test/utils/caster";
-import { accounts } from "@/scripts/utils/utils";
-
-import { ContractMetadata  } from "@ethers-v5";
+import { ContractMetadataMock } from "@ethers-v5";
 
 describe("ContractMetadata", () => {
   const reverter = new Reverter();
 
-  let contractMetadata: ContractMetadata;
+  let contractMetadata: ContractMetadataMock;
 
   before("setup", async () => {
-    contractMetadata = await ContractMetadata.new();
+    const ContractMetadata = await ethers.getContractFactory("ContractMetadataMock");
+    contractMetadata = await ContractMetadata.deploy();
 
     await reverter.snapshot();
   });
@@ -28,7 +21,7 @@ describe("ContractMetadata", () => {
 
   describe("access", () => {
     it("should not initialize", async () => {
-      await truffleAssert.reverts(contractMetadata.init(""), "Initializable: contract is not initializing");
+      expect(contractMetadata.init("")).to.be.revertedWith("Initializable: contract is not initializing");
     });
   });
 
@@ -36,7 +29,7 @@ describe("ContractMetadata", () => {
     it("should set contract metadata", async () => {
       await contractMetadata.setContractMetadata("METADATA");
 
-      assert.equal(await contractMetadata.contractURI(), "METADATA");
+      expect(await contractMetadata.contractURI()).to.equal("METADATA");
     });
   });
 });

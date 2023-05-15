@@ -3,36 +3,28 @@ import { ethers } from "hardhat";
 
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
-import { Reverter } from "@/test/helpers/reverter";
-import { wei } from "@/scripts/utils/utils";
+import { RBACGroupableMock } from "@ethers-v5";
 
-import { getParameter, ParameterType } from "../utils/constants";
-
-import { cast } from "@/test/utils/caster";
-import { accounts } from "@/scripts/utils/utils";
-
-import { RBACGroupableMock  } from "@ethers-v5";
-
-describe("RBAC", () => {
+describe("RBACGroupable", () => {
   let OWNER: SignerWithAddress;
   let SECOND: SignerWithAddress;
 
   let rbac: RBACGroupableMock;
 
   before("setup", async () => {
-    OWNER = await accounts(0);
-    SECOND = await accounts(1);
+    [OWNER, SECOND] = await ethers.getSigners();
   });
 
   beforeEach("setup", async () => {
-    rbac = await RBACMock.new();
+    const RBACGroupableMock = await ethers.getContractFactory("RBACGroupableMock");
+    rbac = await RBACGroupableMock.deploy();
 
     await rbac.__RBACGroupableMock_init();
   });
 
-  describe("#__RBACGroupable_init", () => {
+  describe("__RBACGroupable_init", () => {
     it("should not initialize twice", async () => {
-      await truffleAssert.reverts(rbac.mockInit(), "Initializable: contract is not initializing");
+      await expect(rbac.mockInit()).to.be.revertedWith("RBAC: already initialized");
     });
   });
 
@@ -81,24 +73,22 @@ describe("RBAC", () => {
       }
     });
 
-    describe("#grantGroupRoles", () => {
+    describe("grantGroupRoles", () => {
       it("should revert if no permission", async () => {
-        await truffleAssert.reverts(
-          rbac.grantGroupRoles(GROUP_ALL_ROLES, ALL_ROLES, { from: SECOND }),
+        await expect(
+          rbac.grantGroupRoles(GROUP_ALL_ROLES, ALL_ROLES, { from: SECOND.address }),
           "RBAC: no CREATE permission for resource RBAC_RESOURCE"
         );
       });
 
       it("should revert if no roles provided", async () => {
-        await truffleAssert.reverts(rbac.grantGroupRoles(GROUP_ALL_ROLES, []), "RBACGroupable: empty roles");
+        await expect(rbac.grantGroupRoles(GROUP_ALL_ROLES, []), "RBACGroupable: empty roles");
       });
 
       it("should grant group roles if all conditions are met", async () => {
-        const tx = await rbac.grantGroupRoles(GROUP_ALL_ROLES, ALL_ROLES);
+        expect(await rbac.grantGroupRoles(GROUP_ALL_ROLES, ALL_ROLES)).to.emit(rbac, "GrantedGroupRoles");
 
-        truffleAssert.eventEmitted(tx.receipt, "GrantedGroupRoles");
-
-        assert.deepEqual(await rbac.getGroupRoles(GROUP_ALL_ROLES), ALL_ROLES);
+        expect(await rbac.getGroupRoles(GROUP_ALL_ROLES)).to.be.deep.equal(ALL_ROLES);
       });
     });
 
@@ -109,102 +99,99 @@ describe("RBAC", () => {
         await rbac.grantGroupRoles(GROUP_ROLES12, ROLES_12);
       });
 
-      describe("#revokeGroupRoles", () => {
+      describe("revokeGroupRoles", () => {
         it("should revert if no permission", async () => {
-          await truffleAssert.reverts(
-            rbac.revokeGroupRoles(GROUP_ALL_ROLES, ROLES_01, { from: SECOND }),
+          await expect(
+            rbac.revokeGroupRoles(GROUP_ALL_ROLES, ROLES_01, { from: SECOND.address }),
             "RBAC: no DELETE permission for resource RBAC_RESOURCE"
           );
         });
 
         it("should revert if no roles provided", async () => {
-          await truffleAssert.reverts(rbac.revokeGroupRoles(GROUP_ALL_ROLES, []), "RBACGroupable: empty roles");
+          await expect(rbac.revokeGroupRoles(GROUP_ALL_ROLES, []), "RBACGroupable: empty roles");
         });
 
         it("should revoke group roles if all conditions are met", async () => {
-          const tx = await rbac.revokeGroupRoles(GROUP_ALL_ROLES, ROLES_01);
+          expect(await rbac.revokeGroupRoles(GROUP_ALL_ROLES, ROLES_01)).to.emit(rbac, "RevokedGroupRoles");
 
-          truffleAssert.eventEmitted(tx.receipt, "RevokedGroupRoles");
-
-          assert.deepEqual(await rbac.getGroupRoles(GROUP_ALL_ROLES), [roles[2].name]);
+          expect(await rbac.getGroupRoles(GROUP_ALL_ROLES)).to.be.deep.equal([roles[2].name]);
         });
       });
 
-      describe("#addUserToGroups", () => {
+      describe("addUserToGroups", () => {
         it("should revert if no permission", async () => {
-          await truffleAssert.reverts(
-            rbac.addUserToGroups(SECOND, [GROUP_ROLES01, GROUP_ROLES12], { from: SECOND }),
+          await expect(
+            rbac.addUserToGroups(SECOND.address, [GROUP_ROLES01, GROUP_ROLES12], { from: SECOND.address }),
             "RBAC: no CREATE permission for resource RBAC_RESOURCE"
           );
         });
 
         it("should revert if no groups provided", async () => {
-          await truffleAssert.reverts(rbac.addUserToGroups(SECOND, []), "RBACGroupable: empty groups");
+          await expect(rbac.addUserToGroups(SECOND.address, []), "RBACGroupable: empty groups");
         });
 
         it("should add the user to groups if all conditions are met", async () => {
-          const tx = await rbac.addUserToGroups(SECOND, [GROUP_ROLES01, GROUP_ROLES12]);
+          expect(await rbac.addUserToGroups(SECOND.address, [GROUP_ROLES01, GROUP_ROLES12])).to.emit(
+            rbac,
+            "AddedToGroups"
+          );
 
-          truffleAssert.eventEmitted(tx.receipt, "AddedToGroups");
-
-          assert.deepEqual(await rbac.getUserGroups(SECOND), [GROUP_ROLES01, GROUP_ROLES12]);
+          expect(await rbac.getUserGroups(SECOND.address)).to.be.deep.equal([GROUP_ROLES01, GROUP_ROLES12]);
         });
       });
 
       context("if the user is assigned to groups", () => {
         beforeEach(async () => {
-          await rbac.addUserToGroups(SECOND, [GROUP_ROLES01, GROUP_ROLES12]);
+          await rbac.addUserToGroups(SECOND.address, [GROUP_ROLES01, GROUP_ROLES12]);
         });
 
-        describe("#removeUserFromGroups", () => {
+        describe("removeUserFromGroups", () => {
           it("should revert if no permission", async () => {
-            await truffleAssert.reverts(
-              rbac.removeUserFromGroups(SECOND, [GROUP_ROLES01], { from: SECOND }),
+            await expect(
+              rbac.removeUserFromGroups(SECOND.address, [GROUP_ROLES01], { from: SECOND.address }),
               "RBAC: no DELETE permission for resource RBAC_RESOURCE"
             );
           });
 
           it("should revert if no groups provided", async () => {
-            await truffleAssert.reverts(rbac.removeUserFromGroups(SECOND, []), "RBACGroupable: empty groups");
+            await expect(rbac.removeUserFromGroups(SECOND.address, []), "RBACGroupable: empty groups");
           });
 
           it("should remove the user from groups if all conditions are met", async () => {
-            const tx = await rbac.removeUserFromGroups(SECOND, [GROUP_ROLES01]);
+            expect(await rbac.removeUserFromGroups(SECOND.address, [GROUP_ROLES01])).to.emit(rbac, "RemovedFromGroups");
 
-            truffleAssert.eventEmitted(tx.receipt, "RemovedFromGroups");
-
-            assert.deepEqual(await rbac.getUserGroups(SECOND), [GROUP_ROLES12]);
+            expect(await rbac.getUserGroups(SECOND.address)).to.be.deep.equal([GROUP_ROLES12]);
           });
         });
 
-        describe("#hasPermission", () => {
+        describe("hasPermission", () => {
           it("should have the permission if only the group role", async () => {
-            assert.isTrue(
+            expect(
               await rbac.hasPermission(
-                SECOND,
+                SECOND.address,
                 roles[0].resourcesWithPermissions[0].resource,
                 roles[0].resourcesWithPermissions[0].permissions[0]
               )
-            );
+            ).to.be.true;
           });
 
           it("should have the permission if only own role", async () => {
-            assert.isTrue(await rbac.hasPermission(OWNER, "*", "*"));
+            expect(await rbac.hasPermission(OWNER.address, "*", "*")).to.be.true;
           });
 
           it("should not have the permission if the user has an antipermission", async () => {
             const BANNED_ZERO_ROLE = "BANNED_ZERO_ROLE";
 
             await rbac.addPermissionsToRole(BANNED_ZERO_ROLE, roles[0].resourcesWithPermissions, false);
-            await rbac.grantRoles(SECOND, [BANNED_ZERO_ROLE]);
+            await rbac.grantRoles(SECOND.address, [BANNED_ZERO_ROLE]);
 
-            assert.isFalse(
+            expect(
               await rbac.hasPermission(
-                SECOND,
+                SECOND.address,
                 roles[0].resourcesWithPermissions[0].resource,
                 roles[0].resourcesWithPermissions[0].permissions[0]
               )
-            );
+            ).to.be.false;
           });
 
           it("should not have the permission if the group has an antipermission", async () => {
@@ -213,17 +200,17 @@ describe("RBAC", () => {
             await rbac.addPermissionsToRole(BANNED_ZERO_ROLE, roles[0].resourcesWithPermissions, false);
             await rbac.grantGroupRoles(GROUP_ROLES12, [BANNED_ZERO_ROLE]);
 
-            assert.isFalse(
+            expect(
               await rbac.hasPermission(
-                SECOND,
+                SECOND.address,
                 roles[0].resourcesWithPermissions[0].resource,
                 roles[0].resourcesWithPermissions[0].permissions[0]
               )
-            );
+            ).to.be.false;
           });
 
           it("should not have the permission if it is not assigned", async () => {
-            assert.isFalse(await rbac.hasPermission(SECOND, "*", "*"));
+            expect(await rbac.hasPermission(SECOND.address, "*", "*")).to.be.false;
           });
         });
       });

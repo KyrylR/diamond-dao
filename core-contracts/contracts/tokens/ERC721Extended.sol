@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: LGPL-3.0-or-later
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -17,7 +17,7 @@ import "../metadata/ContractMetadata.sol";
  * - total supply cap
  * - contract metadata
  */
-contract ERC721 is
+contract ERC721Extended is
     IERC721Extended,
     ERC721EnumerableUpgradeable,
     ERC721URIStorageUpgradeable,
@@ -56,7 +56,7 @@ contract ERC721 is
     ) external override onlyOwner {
         require(
             totalSupplyCap == 0 || totalSupply() + 1 <= totalSupplyCap,
-            "[QGDK-016000]-The total supply capacity exceeded, minting is not allowed."
+            "ERC721: The total supply capacity exceeded, minting is not allowed."
         );
 
         _mint(receiver_, tokenId_);
@@ -68,7 +68,7 @@ contract ERC721 is
             ownerOf(tokenId_) == payer_ &&
                 (payer_ == msg.sender ||
                     (getApproved(tokenId_) == msg.sender || isApprovedForAll(payer_, msg.sender))),
-            "[QGDK-016001]-Burn not approved by the owner of the NFT."
+            "ERC721: Burn not approved by the owner of the NFT."
         );
 
         _burn(tokenId_);
@@ -83,7 +83,7 @@ contract ERC721 is
             ownerOf(tokenId_) == msg.sender ||
                 getApproved(tokenId_) == msg.sender ||
                 isApprovedForAll(ownerOf(tokenId_), msg.sender),
-            "[QGDK-016002]-Set token URI not approved by the owner of the NFT."
+            "ERC721: Set token URI not approved by the owner of the NFT."
         );
 
         _setTokenURI(tokenId_, tokenURI_);
@@ -108,7 +108,9 @@ contract ERC721 is
         override(ERC721EnumerableUpgradeable, ERC721Upgradeable, IERC165Upgradeable)
         returns (bool)
     {
-        return interfaceId == type(IERC721Extended).interfaceId || super.supportsInterface(interfaceId);
+        return
+            interfaceId == type(IERC721Extended).interfaceId ||
+            super.supportsInterface(interfaceId);
     }
 
     function _burn(

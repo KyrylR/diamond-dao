@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: LGPL-3.0-or-later
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -16,7 +16,7 @@ import "../metadata/ContractMetadata.sol";
  * - total supply cap
  * - contract metadata
  */
-contract ERC20 is IERC20Extended, ERC20Upgradeable, OwnableUpgradeable, ContractMetadata {
+contract ERC20Extended is IERC20Extended, ERC20Upgradeable, OwnableUpgradeable, ContractMetadata {
     string public ERC20_RESOURCE;
 
     uint256 public totalSupplyCap;
@@ -46,7 +46,7 @@ contract ERC20 is IERC20Extended, ERC20Upgradeable, OwnableUpgradeable, Contract
     function mintTo(address account_, uint256 amount_) external override onlyOwner {
         require(
             totalSupplyCap == 0 || totalSupply() + amount_ <= totalSupplyCap,
-            "[QGDK-015000]-The total supply capacity exceeded, minting is not allowed."
+            "ERC20: The total supply capacity exceeded, minting is not allowed."
         );
 
         _mint(account_, amount_);

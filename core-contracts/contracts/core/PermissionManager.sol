@@ -75,7 +75,7 @@ contract PermissionManager is PermissionManagerStorage {
 
         require(
             success_ && result_.length > 0,
-            "[QGDK-008001]-The target contract must follow integration documentation."
+            "PermissionManager: The target contract must follow integration documentation."
         );
 
         IDAOIntegration.ResourceRecords[] memory records_ = abi.decode(
@@ -171,7 +171,7 @@ contract PermissionManager is PermissionManagerStorage {
 
         require(
             !vetoGroup_.target.compare(""),
-            "[QGDK-008002]-The veto group does not exists, impossible to remove it."
+            "PermissionManager: The veto group does not exists, impossible to remove it."
         );
 
         DAOMemberStorage linkedMemberStorage_ = vetoGroup_.linkedMemberStorage;
@@ -205,7 +205,7 @@ contract PermissionManager is PermissionManagerStorage {
 
         require(
             !vetoGroup_.target.compare(""),
-            "[QGDK-008003]-The veto group does not exists, impossible to link it with member storage."
+            "PermissionManager: The veto group does not exists, impossible to link it with member storage."
         );
 
         DAOMemberStorage oldLinkedMemberStorage_ = vetoGroup_.linkedMemberStorage;
@@ -241,12 +241,8 @@ contract PermissionManager is PermissionManagerStorage {
 
         addPermissionsToRole(
             getDAOVotingRole(panelName_)[0],
-            [
-                IRBAC.ResourceWithPermissions(
-                    DAOVault(payable(address(this))).DAO_VAULT_RESOURCE(),
-                    [UPDATE_PERMISSION].asArray()
-                )
-            ].asArray(),
+            [IRBAC.ResourceWithPermissions(DAO_VAULT_RESOURCE, [UPDATE_PERMISSION].asArray())]
+                .asArray(),
             true
         );
 
@@ -292,7 +288,10 @@ contract PermissionManager is PermissionManagerStorage {
     ) internal {
         VetoGroup storage vetoGroup_ = getPermissionManagerStorage().vetoGroups[target_];
 
-        require(vetoGroup_.target.compare(""), "[QGDK-008004]-The veto group already exists.");
+        require(
+            vetoGroup_.target.compare(""),
+            "PermissionManager: The veto group already exists."
+        );
 
         vetoGroup_.name = name_;
         vetoGroup_.target = target_;
@@ -318,7 +317,12 @@ contract PermissionManager is PermissionManagerStorage {
     function _grantSpecialPermissions(string memory role_, string[] memory permissions_) private {
         addPermissionsToRole(
             role_,
-            [IRBAC.ResourceWithPermissions(getResource(), permissions_)].asArray(),
+            [
+                IRBAC.ResourceWithPermissions(
+                    getPermissionManagerStorage().PERMISSION_MANAGER_RESOURCE,
+                    permissions_
+                )
+            ].asArray(),
             true
         );
     }

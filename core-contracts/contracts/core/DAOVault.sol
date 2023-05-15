@@ -61,6 +61,8 @@ contract DAOVault is DAOVaultStorage {
         require(!getVaultStorage().initialized, "DAOVault: already initialized");
 
         getVaultStorage().permissionManager = PermissionManager(address(this));
+
+        getVaultStorage().initialized = true;
     }
 
     /**
@@ -269,6 +271,11 @@ contract DAOVault is DAOVaultStorage {
                 amount_
             ),
             "DAOVault: Trying to withdraw more than locked."
+        );
+
+        require(
+            _vs.userTokenBalance[msg.sender][tokenAddress_] >= amount_,
+            "DAOVault: Not enough tokens to withdraw."
         );
 
         if (_vs.userTokenBalance[msg.sender][tokenAddress_] - amount_ == 0) {

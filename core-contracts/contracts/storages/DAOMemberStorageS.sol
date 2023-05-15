@@ -33,24 +33,6 @@ abstract contract DAOMemberStorageS is IDAOMemberStorage {
     }
 
     /**
-     * @inheritdoc IDAOResource
-     */
-    function checkPermission(
-        address account_,
-        string memory permission_
-    ) public view override returns (bool) {
-        return
-            getMSStorage().permissionManager.hasPermission(account_, getResource(), permission_);
-    }
-
-    /**
-     * @inheritdoc IDAOResource
-     */
-    function getResource() public view returns (string memory) {
-        return getMSStorage().DAO_MEMBER_STORAGE_RESOURCE;
-    }
-
-    /**
      * @inheritdoc IDAOMemberStorage
      */
     function isMember(address member_) external view returns (bool) {
@@ -80,7 +62,11 @@ abstract contract DAOMemberStorageS is IDAOMemberStorage {
 
     function _requirePermission(string memory permission_) internal view {
         require(
-            checkPermission(msg.sender, permission_),
+            getMSStorage().permissionManager.hasPermission(
+                msg.sender,
+                getMSStorage().DAO_MEMBER_STORAGE_RESOURCE,
+                permission_
+            ),
             "DAOMemberStorage: The sender is not allowed to perform the action, access denied."
         );
     }

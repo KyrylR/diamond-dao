@@ -6,7 +6,6 @@
   "description": "Diamond DAO",
   "scripts": {
     "build": "npm install && npm run generate-types",
-    "install": "npx husky install",
     "compile": "npx hardhat compile",
     "coverage": "npx hardhat coverage --solcoverjs ./.solcover.ts",
     "clean": "npx hardhat clean",
@@ -16,7 +15,7 @@
     "deploy-localhost": "npx hardhat migrate --network localhost",
     "deploy-sepolia": "npx hardhat migrate --network sepolia --verify --confirmations 5",
     "deploy-mumbai": "npx hardhat migrate --network mumbai --verify --confirmations 10",
-    "generate-types": "TYPECHAIN_FORCE=true npx hardhat typechain && npx hardhat gobind",
+    "generate-types": "TYPECHAIN_FORCE=true npx hardhat typechain",
     "generate-docs": "npx hardhat markup",
     "lint-fix": "npm run lint-sol-fix && npm run lint-ts-fix && npm run lint-json-fix",
     "lint-json-fix": "prettier --write \"./**/*.json\"",

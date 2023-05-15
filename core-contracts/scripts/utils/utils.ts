@@ -1,4 +1,4 @@
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 import { BigNumber } from "bignumber.js";
 
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
@@ -34,3 +34,17 @@ export function fromWei(value: string | number | bigint, decimal: number = 18): 
 export async function accounts(index: number): Promise<SignerWithAddress> {
   return (await ethers.getSigners())[index];
 }
+
+export const getBalance = async (address: any) => {
+  return await network.provider.request({
+    method: "eth_getBalance",
+    params: [address],
+  });
+};
+
+export const setBalance = async (address: any, balance = "0xFFFFFFFFFFFFFFFFFFFFFFFFF") => {
+  await network.provider.request({
+    method: "hardhat_setBalance",
+    params: [address, balance],
+  });
+};

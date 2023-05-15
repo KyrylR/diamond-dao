@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: LGPL-3.0-or-later
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -56,7 +56,7 @@ contract SBT is
     ) external virtual override {
         require(
             totalSupplyCap == 0 || totalSupply() + 1 <= totalSupplyCap,
-            "[QGDK-020000]-The total supply capacity exceeded, minting is not allowed."
+            "SBT: The total supply capacity exceeded, minting is not allowed."
         );
 
         _mint(receiver_, tokenId_);
@@ -80,7 +80,7 @@ contract SBT is
             ownerOf(tokenId_) == msg.sender ||
                 getApproved(tokenId_) == msg.sender ||
                 isApprovedForAll(ownerOf(tokenId_), msg.sender),
-            "[QGDK-020001]-Set token URI not approved by the owner of the SBT."
+            "SBT: Set token URI not approved by the owner of the SBT."
         );
 
         _setTokenURI(tokenId_, tokenURI_);
@@ -139,14 +139,11 @@ contract SBT is
 
         if (from == address(0)) {
             _checkOwner();
-            require(
-                ERC721Upgradeable.balanceOf(to) == 0,
-                "[QGDK-020002]-The user already has a SBT."
-            );
+            require(ERC721Upgradeable.balanceOf(to) == 0, "SBT: The user already has a SBT.");
         } else if (to == address(0)) {
-            require(_isAbleToBurn(msg.sender, tokenId), "[QGDK-020003]-Burn not authorized.");
+            require(_isAbleToBurn(msg.sender, tokenId), "SBT: Burn not authorized.");
         } else {
-            revert("[QGDK-020004]-SBT is not transferable.");
+            revert("SBT: Not transferable.");
         }
     }
 

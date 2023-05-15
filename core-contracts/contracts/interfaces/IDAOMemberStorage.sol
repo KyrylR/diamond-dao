@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import "./IDAOResource.sol";
-
 import "../libs/ParameterSet.sol";
 
 /**
  * @title IDAOMemberStorage
  * @dev Interface for a contract that stores and manages members of a DAO panel.
  */
-interface IDAOMemberStorage is IDAOResource {
+interface IDAOMemberStorage {
     /**
      * @dev Adds a single member to the DAO.
      * @param member_ The address of the member to add.

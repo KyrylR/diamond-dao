@@ -3,13 +3,11 @@ pragma solidity 0.8.19;
 
 import "../libs/ParameterSet.sol";
 
-import "./IDAOResource.sol";
-
 /**
  * @title IDAOParameterStorage
  * @dev Interface for a contract that stores and manages parameters for a DAO panel.
  */
-interface IDAOParameterStorage is IDAOResource {
+interface IDAOParameterStorage {
     /**
      * @dev Sets a single DAO parameter, changes the existing parameter.
      * @param parameter_ The parameter to set or change

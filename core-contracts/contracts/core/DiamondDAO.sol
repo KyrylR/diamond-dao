@@ -49,7 +49,7 @@ contract DiamondDAO is IDiamondCut, DiamondDAOStorage {
     }
 
     function transferOwnership(address newOwner_) public onlyOwner {
-        require(newOwner_ != address(0), "LibDiamondDAO: zero address owner");
+        require(newOwner_ != address(0), "DiamondDAO: zero address owner");
 
         getDiamondStorage().owner = newOwner_;
     }
@@ -69,12 +69,12 @@ contract DiamondDAO is IDiamondCut, DiamondDAOStorage {
                 _addFacet(cut.facetAddress, cut.functionSelectors);
             } else if (cut.action == FacetCutAction.Replace) {
                 _replaceFaucet(cut.facetAddress, cut.functionSelectors);
-            } else if (cut.action == FacetCutAction.Remove) {
-                _removeFacet(cut.facetAddress, cut.functionSelectors);
             } else {
-                revert("LibDiamondDAO: Incorrect FacetCutAction");
+                _removeFacet(cut.facetAddress, cut.functionSelectors);
             }
         }
+
+        // TODO: add functionality for init contracts
 
         emit DiamondCut(diamondCut_, initContract_, initPayload_);
     }
@@ -85,15 +85,15 @@ contract DiamondDAO is IDiamondCut, DiamondDAOStorage {
      *  @param selectors_ the function selectors the implementation has
      */
     function _addFacet(address facet_, bytes4[] memory selectors_) internal {
-        require(facet_.isContract(), "LibDiamondDAO: facet is not a contract");
-        require(selectors_.length > 0, "LibDiamondDAO: no selectors provided");
+        require(facet_.isContract(), "DiamondDAO: facet is not a contract");
+        require(selectors_.length > 0, "DiamondDAO: no selectors provided");
 
         DStorage storage _ds = getDiamondStorage();
 
         for (uint256 i = 0; i < selectors_.length; i++) {
             require(
                 _ds.selectorToFacet[selectors_[i]] == address(0),
-                "LibDiamondDAO: selector already added"
+                "DiamondDAO: selector already added"
             );
 
             _ds.selectorToFacet[selectors_[i]] = facet_;
@@ -110,14 +110,14 @@ contract DiamondDAO is IDiamondCut, DiamondDAOStorage {
      *  @param selectors_ the selectors of that implementation to be removed
      */
     function _removeFacet(address facet_, bytes4[] memory selectors_) internal {
-        require(selectors_.length > 0, "LibDiamondDAO: no selectors provided");
+        require(selectors_.length > 0, "DiamondDAO: no selectors provided");
 
         DStorage storage _ds = getDiamondStorage();
 
         for (uint256 i = 0; i < selectors_.length; i++) {
             require(
                 _ds.selectorToFacet[selectors_[i]] == facet_,
-                "LibDiamondDAO: selector from another facet"
+                "DiamondDAO: selector from another facet"
             );
 
             _ds.selectorToFacet[selectors_[i]] = address(0);
@@ -137,18 +137,18 @@ contract DiamondDAO is IDiamondCut, DiamondDAOStorage {
     function _replaceFaucet(address facet_, bytes4[] memory selectors_) internal {
         DStorage storage _ds = getDiamondStorage();
 
-        require(facet_.isContract(), "LibDiamondDAO: facet is not a contract");
-        require(selectors_.length > 0, "LibDiamondDAO: no selectors provided");
+        require(facet_.isContract(), "DiamondDAO: facet is not a contract");
+        require(selectors_.length > 0, "DiamondDAO: no selectors provided");
 
         for (uint256 i = 0; i < selectors_.length; i++) {
             bytes4 selector_ = selectors_[i];
             address oldFacetAddress_ = _ds.selectorToFacet[selector_];
 
-            require(oldFacetAddress_ != address(0), "LibDiamondDAO: selector not found");
-            require(oldFacetAddress_ != facet_, "LibDiamondDAO: selector already added");
+            require(oldFacetAddress_ != address(0), "DiamondDAO: selector not found");
+            require(oldFacetAddress_ != facet_, "DiamondDAO: selector already added");
             require(
                 oldFacetAddress_ != address(this),
-                "LibDiamondDAO: can't replace immutable function"
+                "DiamondDAO: can't replace immutable function"
             );
 
             _ds.selectorToFacet[selector_] = facet_;

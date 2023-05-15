@@ -52,23 +52,6 @@ abstract contract DAOParameterStorageS is IDAOParameterStorage {
     }
 
     /**
-     * @inheritdoc IDAOResource
-     */
-    function checkPermission(
-        address member_,
-        string memory permission_
-    ) public view returns (bool) {
-        return getPSStorage().permissionManager.hasPermission(member_, getResource(), permission_);
-    }
-
-    /**
-     * @inheritdoc IDAOResource
-     */
-    function getResource() public view returns (string memory) {
-        return getPSStorage().DAO_PARAMETER_STORAGE_RESOURCE;
-    }
-
-    /**
      * @inheritdoc IDAOParameterStorage
      */
     function getDAOParameter(
@@ -92,8 +75,12 @@ abstract contract DAOParameterStorageS is IDAOParameterStorage {
 
     function _requirePermission(string memory permission_) private view {
         require(
-            checkPermission(msg.sender, permission_),
-            "[QGDK-005000]-The sender is not allowed to perform the action, access denied."
+            getPSStorage().permissionManager.hasPermission(
+                msg.sender,
+                getPSStorage().DAO_PARAMETER_STORAGE_RESOURCE,
+                permission_
+            ),
+            "DAOParameterStorage: The sender is not allowed to perform the action, access denied."
         );
     }
 }

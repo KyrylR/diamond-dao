@@ -103,6 +103,13 @@ abstract contract DAOVotingStorage is IDAOVoting {
     }
 
     /**
+     * @dev Retrieves the address of the voting token.
+     */
+    function getVotingToken() external view returns (address) {
+        return getDAOVotingStorage().votingToken;
+    }
+
+    /**
      * @dev Retrieves the proposal with the specified ID.
      * @param proposalId_ The ID of the proposal to retrieve.
      * @return A DAOProposal struct representing the proposal.
@@ -256,28 +263,6 @@ abstract contract DAOVotingStorage is IDAOVoting {
             });
     }
 
-    /**
-     * @inheritdoc IDAOResource
-     */
-    function checkPermission(
-        address member_,
-        string memory permission_
-    ) public view returns (bool) {
-        return
-            getDAOVotingStorage().permissionManager.hasPermission(
-                member_,
-                getResource(),
-                permission_
-            );
-    }
-
-    /**
-     * @inheritdoc IDAOResource
-     */
-    function getResource() public view returns (string memory) {
-        return getDAOVotingStorage().DAO_VOTING_RESOURCE;
-    }
-
     function _getAndLockUserVotingPower(uint256 proposalId_) internal virtual returns (uint256) {
         VotingStorage storage _vs = getDAOVotingStorage();
 
@@ -301,8 +286,12 @@ abstract contract DAOVotingStorage is IDAOVoting {
 
     function _checkRestriction() internal view virtual {
         require(
-            checkPermission(msg.sender, EXPERT_PERMISSION),
-            "[QGDK-017000]-Permission denied - only experts have access."
+            getDAOVotingStorage().permissionManager.hasPermission(
+                msg.sender,
+                getDAOVotingStorage().DAO_VOTING_RESOURCE,
+                EXPERT_PERMISSION
+            ),
+            "DAOVoting: Permission denied - only experts have access."
         );
     }
 
@@ -382,7 +371,11 @@ abstract contract DAOVotingStorage is IDAOVoting {
 
     function _requireVotingPermission(string memory permission_) internal view {
         require(
-            checkPermission(msg.sender, permission_),
+            getDAOVotingStorage().permissionManager.hasPermission(
+                msg.sender,
+                getDAOVotingStorage().DAO_VOTING_RESOURCE,
+                permission_
+            ),
             "DAOVoting: The sender is not allowed to perform the action, access denied."
         );
     }

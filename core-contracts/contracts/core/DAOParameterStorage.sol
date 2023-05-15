@@ -36,6 +36,8 @@ contract DAOParameterStorage is DAOParameterStorageS {
         _psStorage.DAO_PARAMETER_STORAGE_RESOURCE = resource_;
 
         _psStorage.permissionManager = PermissionManager(address(this));
+
+        _psStorage.initialized = true;
     }
 
     /**

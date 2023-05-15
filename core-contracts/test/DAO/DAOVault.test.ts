@@ -4,23 +4,19 @@ import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 import { Reverter } from "@/test/helpers/reverter";
-import { wei } from "@/scripts/utils/utils";
 
 import {
-  DAO_REGISTRY_NAME,
-  DAO_VAULT_RESOURCE,
-  MASTER_ROLE,
   UPDATE_PERMISSION,
   DAO_VAULT_NAME,
-  RECEIVE_PERMISSION,
-  SPEND_PERMISSION,
-  BURN_PERMISSION,
-  MINT_PERMISSION,
   ETHEREUM_ADDRESS,
   DefaultERC20Params,
   DefaultERC721Params,
   ERC20_NAME,
   ERC721_NAME,
+  DAO_PERMISSION_MANAGER_NAME,
+  DAO_RESERVED_NAME,
+  VOTING_NAME,
+  DefaultSBTParams,
 } from "../utils/constants";
 
 import { toBN, getBalance, setBalance } from "@/scripts/utils/utils";
@@ -28,8 +24,10 @@ import { getCurrentBlockTime, setTime } from "@/test/helpers/block-helper";
 import { impersonate } from "@/test/helpers/impersonator";
 import { castBN } from "@/test/utils/caster";
 
-import { PermissionManager, DAOVault, ERC721, ERC20, SBT } from "@ethers-v5";
+import { PermissionManager, DAOVault, ERC721Extended, ERC20Extended, SBT, IRBAC, DiamondDAO } from "@ethers-v5";
+import { buildFaucetCutsFromFuncSigs, DAOVaultFuncSigs, PermissionManagerFuncSigs } from "@/test/utils/faucetCuts";
 
+import { BigNumberish } from "ethers";
 
 describe("DAOVault", () => {
   const reverter = new Reverter();
@@ -38,87 +36,81 @@ describe("DAOVault", () => {
   let USER1: SignerWithAddress;
   let USER2: SignerWithAddress;
 
+  let diamond: DiamondDAO;
   let manager: PermissionManager;
   let daoVault: DAOVault;
-  let erc20: ERC20;
-  let erc721: ERC721;
-  let erc721_2: ERC721;
+  let erc20: ERC20Extended;
+  let erc721: ERC721Extended;
+  let erc721_2: ERC721Extended;
   let sbt: SBT;
 
   const DAOVaultUpdateRole = "VUR";
-  const TokenRoles = "TKR";
 
-  const ERC20_RESOURCE = "ERC20";
-  const ERC721_RESOURCE = "ERC721";
-  const SBT_RESOURCE = "SBT";
-
-  const ether = toBN(10).pow(18);
+  const ether: BigNumberish = toBN(10).pow(18).toString();
 
   before("setup", async () => {
     [OWNER, USER1, USER2] = await ethers.getSigners();
 
-    registry = await DAORegistry.new();
-    daoVault = await DAOVault.new();
-    erc20 = await ERC20.new();
-    erc721 = await ERC721.new();
-    erc721_2 = await ERC721.new();
-    sbt = await SBT.new();
+    const DiamondDAO = await ethers.getContractFactory("DiamondDAO");
+    diamond = await DiamondDAO.deploy();
 
-    await registry.__DAORegistry_init(
-      (
-        await PermissionManager.new()
-      ).address,
-      OWNER,
-      DAO_REGISTRY_NAME,
-      "DAO_REGISTRY",
-      "daoURI"
-    );
+    const DAOVault = await ethers.getContractFactory("DAOVault");
+    daoVault = await DAOVault.deploy();
 
-    manager = await PermissionManager.at(await registry.getPermissionManager());
+    const PermissionManager = await ethers.getContractFactory("PermissionManager");
+    manager = await PermissionManager.deploy();
 
-    await registry.addProxyContract(DAO_VAULT_NAME, daoVault.address);
-    await registry.addProxyContract(ERC20_NAME, erc20.address);
-    await registry.addProxyContract(ERC721_NAME, erc721.address);
-    await registry.addProxyContract("ERC721_2", erc721_2.address);
-    await registry.addProxyContract("SBT", sbt.address);
+    const ERC20 = await ethers.getContractFactory("ERC20Extended");
+    erc20 = await ERC20.deploy();
+    await erc20.__ERC20_init(DefaultERC20Params, ERC20_NAME);
 
-    daoVault = await DAOVault.at(await registry.getDAOVault());
-    erc20 = await ERC20.at(await registry.getContract(ERC20_NAME));
-    erc721 = await ERC721.at(await registry.getContract(ERC721_NAME));
-    erc721_2 = await ERC721.at(await registry.getContract("ERC721_2"));
-    sbt = await SBT.at(await registry.getContract("SBT"));
+    const ERC721 = await ethers.getContractFactory("ERC721Extended");
+    erc721 = await ERC721.deploy();
+    await erc721.__ERC721_init(DefaultERC721Params, ERC721_NAME);
 
-    await erc20.__ERC20_init(DefaultERC20Params, ERC20_RESOURCE);
-    await erc721.__ERC721_init(DefaultERC721Params, ERC721_RESOURCE);
-    await erc721_2.__ERC721_init(DefaultERC721Params, ERC721_RESOURCE);
-    await sbt.__SBT_init(DefaultERC721Params, SBT_RESOURCE);
+    erc721_2 = await ERC721.deploy();
+    await erc721_2.__ERC721_init(DefaultERC721Params, ERC721_NAME);
 
-    await daoVault.__DAOVault_init(registry.address);
+    const SBT = await ethers.getContractFactory("SBT");
+    sbt = await SBT.deploy();
+    await sbt.__SBT_init(DefaultSBTParams, ERC20_NAME);
 
-    await registry.injectDependencies(DAO_VAULT_NAME);
+    const daoVaultFaucetCuts = buildFaucetCutsFromFuncSigs(DAOVaultFuncSigs, daoVault.address, 0);
+    const permissionManagerFaucetCuts = buildFaucetCutsFromFuncSigs(PermissionManagerFuncSigs, manager.address, 0);
 
-    const DAOVaultCreate = [DAO_VAULT_RESOURCE, [UPDATE_PERMISSION]];
-    const TokenPermissions = [ERC20_RESOURCE, [MINT_PERMISSION, BURN_PERMISSION, SPEND_PERMISSION, RECEIVE_PERMISSION]];
+    await diamond.diamondCut(daoVaultFaucetCuts, ethers.constants.AddressZero, "0x");
+    await diamond.diamondCut(permissionManagerFaucetCuts, ethers.constants.AddressZero, "0x");
 
-    await manager.addPermissionsToRole(DAOVaultUpdateRole, [DAOVaultCreate], true);
-    await manager.addPermissionsToRole(TokenRoles, [TokenPermissions], true);
+    daoVault = await DAOVault.attach(diamond.address);
+    manager = await PermissionManager.attach(diamond.address);
 
-    await manager.grantRoles(USER1, [TokenRoles]);
+    await manager.__PermissionManager_init(OWNER.address, DAO_PERMISSION_MANAGER_NAME, DAO_RESERVED_NAME);
+    await daoVault.__DAOVault_init();
 
-    await erc20.mintTo(USER1, "10000000", { from: OWNER });
-    await erc20.approve(daoVault.address, "10000000", { from: USER1 });
+    await manager.confMemberGroup(VOTING_NAME, DAO_RESERVED_NAME);
+    await manager.confExpertsGroups(VOTING_NAME, DAO_RESERVED_NAME);
 
-    await erc721.mintTo(USER1, 0, "some_uri", { from: OWNER });
-    await erc721.mintTo(USER1, 1, "some_uri", { from: OWNER });
-    await erc721.setApprovalForAll(daoVault.address, true, { from: USER1 });
+    const DAOVaultUpdate: IRBAC.ResourceWithPermissionsStruct[] = [
+      {
+        resource: DAO_VAULT_NAME,
+        permissions: [UPDATE_PERMISSION],
+      },
+    ];
 
-    await erc721_2.mintTo(USER1, 0, "some_uri", { from: OWNER });
-    await erc721_2.setApprovalForAll(daoVault.address, true, { from: USER1 });
+    await manager.addPermissionsToRole(DAOVaultUpdateRole, DAOVaultUpdate, true);
 
-    await sbt.mintTo(OWNER, 0, "some_uri", 0, { from: OWNER });
-    await sbt.mintTo(USER1, 1, "some_uri", 0, { from: OWNER });
+    await erc20.mintTo(USER1.address, "10000000");
+    await erc20.connect(USER1).approve(daoVault.address, "10000000");
 
-    await manager.grantRoles(daoVault.address, [MASTER_ROLE]);
+    await erc721.mintTo(USER1.address, 0, "some_uri");
+    await erc721.mintTo(USER1.address, 1, "some_uri");
+    await erc721.connect(USER1).setApprovalForAll(daoVault.address, true);
+
+    await erc721_2.mintTo(USER1.address, 0, "some_uri");
+    await erc721_2.connect(USER1).setApprovalForAll(daoVault.address, true);
+
+    await sbt.mintTo(OWNER.address, 0, "some_uri", 0);
+    await sbt.mintTo(USER1.address, 1, "some_uri", 0);
 
     await reverter.snapshot();
   });
@@ -126,379 +118,350 @@ describe("DAOVault", () => {
   afterEach("revert", reverter.revert);
 
   describe("access", () => {
-    it("only injector should set dependencies", async () => {
-      await truffleAssert.reverts(
-        daoVault.setDependencies(registry.address, "0x", { from: USER1 }),
-        "Dependant: not an injector"
-      );
-    });
-
     it("should initialize only once", async () => {
-      await truffleAssert.reverts(
-        daoVault.__DAOVault_init(registry.address),
-        "Initializable: contract is already initialized"
-      );
+      await expect(daoVault.__DAOVault_init()).to.be.revertedWith("DAOVault: already initialized");
     });
   });
 
   describe("deposit", () => {
     it("should deposit ERC20 tokens", async () => {
-      assert.deepEqual(await registry.getAccountStatuses(USER1), [["DAO Token Holder"], [false]]);
-      assert.deepEqual(await manager.getUserGroups(USER1), []);
+      expect(await manager.getUserGroups(USER1.address)).to.be.empty;
 
-      await daoVault.depositERC20(erc20.address, 1000, { from: USER1 });
+      await daoVault.connect(USER1).depositERC20(erc20.address, 1000);
+      expect(await daoVault.getUserTokenBalance(USER1.address, erc20.address)).to.equal(1000);
 
-      assert.deepEqual(await registry.getAccountStatuses(USER1), [["DAO Token Holder"], [true]]);
-
-      assert.equal(await daoVault.userTokenBalance(USER1, erc20.address), 1000);
-
-      assert.deepEqual(await manager.getUserGroups(USER1), [`DAOGroup:DAO_REGISTRY`]);
-      assert.equal(
-        (await daoVault.getUserVotingPower(USER1, erc20.address)).toString(),
-        (await daoVault.userTokenBalance(USER1, erc20.address)).toString()
+      expect(await manager.getUserGroups(USER1.address)).to.have.members([`DAOGroup:DAO Token Holder`]);
+      expect(await daoVault.getUserVotingPower(USER1.address, erc20.address)).to.equal(
+        await daoVault.getUserTokenBalance(USER1.address, erc20.address)
       );
-      assert.equal((await daoVault.getTokenSupply(erc20.address)).toString(), "10000000");
+      expect(await daoVault.getTokenSupply(erc20.address)).to.equal(10000000);
     });
 
     it("should be able to deposit Native tokens", async () => {
-      await daoVault.depositNative({ from: USER1, value: ether });
+      expect(await daoVault.connect(USER1).depositNative({ value: ether }))
+        .to.emit(daoVault, "Deposited")
+        .withArgs(USER1.address, ether);
 
-      assert.equal((await daoVault.userTokenBalance(USER1, ETHEREUM_ADDRESS)).toString(), ether.toString());
-      assert.deepEqual(await manager.getUserGroups(USER1), [`DAOGroup:DAO_REGISTRY`]);
-      assert.equal(
-        (await daoVault.getUserVotingPower(USER1, ETHEREUM_ADDRESS)).toString(),
-        (await daoVault.userTokenBalance(USER1, ETHEREUM_ADDRESS)).toString()
+      expect(await daoVault.getUserTokenBalance(USER1.address, ETHEREUM_ADDRESS)).to.equal(ether);
+      expect(await manager.getUserGroups(USER1.address)).to.have.members([`DAOGroup:DAO Token Holder`]);
+      expect(await daoVault.getUserVotingPower(USER1.address, ETHEREUM_ADDRESS)).to.equal(
+        await daoVault.getUserTokenBalance(USER1.address, ETHEREUM_ADDRESS)
       );
     });
 
     it("should deposit ERC721 tokens", async () => {
-      await daoVault.depositNFT(erc721.address, 0, { from: USER1 });
+      await daoVault.connect(USER1).depositNFT(erc721.address, 0);
 
-      assert.equal(await daoVault.getUserVotingPower(USER1, erc721.address), 1);
+      expect(await daoVault.getUserVotingPower(USER1.address, erc721.address)).to.equal(1);
 
-      assert.deepEqual(await manager.getUserGroups(USER1), [`DAOGroup:DAO_REGISTRY`]);
+      expect(await manager.getUserGroups(USER1.address)).to.have.members([`DAOGroup:DAO Token Holder`]);
 
-      await truffleAssert.reverts(
-        daoVault.depositNFT(erc20.address, 0, { from: USER1 }),
-        "[QGDK-007000]-The token does not supported."
+      await expect(daoVault.connect(USER1).depositNFT(erc20.address, 0)).to.be.revertedWith(
+        "DAOVault: The token does not supported."
       );
     });
 
     it("should be able authorize with SBT", async () => {
-      assert.equal(await daoVault.getUserVotingPower(USER2, sbt.address), 0);
-      assert.equal(await daoVault.getUserVotingPower(USER1, sbt.address), 1);
+      expect(await daoVault.getUserVotingPower(USER1.address, sbt.address)).to.equal(1);
+      expect(await daoVault.getUserVotingPower(USER2.address, sbt.address)).to.equal(0);
 
-      await daoVault.authorizeBySBT(sbt.address, { from: USER1 });
+      await daoVault.connect(USER1).authorizeBySBT(sbt.address);
 
-      await truffleAssert.reverts(
-        daoVault.authorizeBySBT(sbt.address, { from: USER2 }),
-        "[QGDK-007001]-The user is not authorized or token does not supported."
+      await expect(daoVault.connect(USER2).authorizeBySBT(sbt.address)).to.be.revertedWith(
+        "DAOVault: The user is not authorized or token does not supported."
       );
 
-      assert.equal(await daoVault.getUserVotingPower(USER1, sbt.address), 1);
+      expect(await daoVault.getUserVotingPower(USER1.address, sbt.address)).to.equal(1);
 
-      assert.deepEqual(await manager.getUserGroups(USER1), [`DAOGroup:DAO_REGISTRY`]);
+      expect(await manager.getUserGroups(USER1.address)).to.have.members([`DAOGroup:DAO Token Holder`]);
     });
   });
 
   describe("lock", () => {
     it("should lock ERC20 tokens", async () => {
-      await truffleAssert.reverts(
-        daoVault.lock(USER1, erc20.address, 1000, 1000, { from: OWNER }),
-        "[QGDK-007007]-Not enough tokens to lock."
+      await expect(daoVault.lock(USER1.address, erc20.address, 1000, 1000)).to.be.revertedWith(
+        "DAOVault: Not enough tokens to lock."
       );
 
-      await truffleAssert.reverts(
-        daoVault.lock(USER1, erc20.address, 1000, 1000, { from: USER1 }),
-        "[QGDK-007010]-The sender is not allowed to perform the action, access denied."
+      await expect(daoVault.connect(USER1).lock(USER1.address, erc20.address, 1000, 1000)).to.be.revertedWith(
+        "DAOVault: The sender is not allowed to perform the action, access denied."
       );
 
-      await daoVault.depositERC20(erc20.address, 1000, { from: USER1 });
+      await daoVault.connect(USER1).depositERC20(erc20.address, 1000);
 
-      await truffleAssert.reverts(
-        daoVault.depositERC20(erc20.address, 1000, { from: USER1, value: 1000 }),
-        "Transaction reverted: non-payable function was called with value 1000"
-      );
+      let result = await daoVault.getTimeLockInfo(USER1.address, erc20.address);
+      expect(result.withdrawalAmount).to.equal(1000);
+      expect(result.lockedAmount).to.equal(0);
+      expect(result.unlockTime).to.equal(0);
 
-      let result = await daoVault.getTimeLockInfo(USER1, erc20.address);
-      assert.equal(result.withdrawalAmount, 1000);
-      assert.equal(result.lockedAmount, 0);
-      assert.equal(result.unlockTime, 0);
+      expect(await daoVault.getUserTokenBalance(USER1.address, erc20.address)).to.equal(1000);
 
-      assert.equal(await daoVault.userTokenBalance(USER1, erc20.address), 1000);
+      const lockTime = Number(await getCurrentBlockTime()) + 1000;
+      await daoVault.lock(USER1.address, erc20.address, 1000, lockTime);
 
-      const lockTime = (await getCurrentBlockTime()) + 1000;
-      await daoVault.lock(USER1, erc20.address, 1000, lockTime, { from: OWNER });
+      expect(await daoVault.getUserTokenBalance(USER1.address, erc20.address)).to.equal(1000);
 
-      assert.equal(await daoVault.userTokenBalance(USER1, erc20.address), 1000);
+      result = await daoVault.getTimeLockInfo(USER1.address, erc20.address);
+      expect(result.withdrawalAmount).to.equal(0);
+      expect(result.lockedAmount).to.equal(1000);
+      expect(result.unlockTime).to.equal(lockTime);
 
-      result = await daoVault.getTimeLockInfo(USER1, erc20.address);
-      assert.equal(result.withdrawalAmount, 0);
-      assert.equal(result.lockedAmount, 1000);
-      assert.equal(result.unlockTime, lockTime);
+      await daoVault.connect(USER1).depositERC20(erc20.address, 100);
 
-      await daoVault.depositERC20(erc20.address, 100, { from: USER1 });
-
-      result = await daoVault.getTimeLockInfo(USER1, erc20.address);
-      assert.equal(result.withdrawalAmount, 100);
-      assert.equal(result.lockedAmount, 1000);
-      assert.equal(result.unlockTime, lockTime);
+      result = await daoVault.getTimeLockInfo(USER1.address, erc20.address);
+      expect(result.withdrawalAmount).to.equal(100);
+      expect(result.lockedAmount).to.equal(1000);
+      expect(result.unlockTime).to.equal(lockTime);
 
       await setTime(lockTime + 1);
 
-      result = await daoVault.getTimeLockInfo(USER1, erc20.address);
-      assert.equal(result.withdrawalAmount, 1100);
-      assert.equal(result.lockedAmount, 0);
-      assert.equal(result.unlockTime, 0);
+      result = await daoVault.getTimeLockInfo(USER1.address, erc20.address);
+      expect(result.withdrawalAmount).to.equal(1100);
+      expect(result.lockedAmount).to.equal(0);
+      expect(result.unlockTime).to.equal(0);
 
-      const newLockTime = (await getCurrentBlockTime()) + 1000;
-      await daoVault.lock(USER1, erc20.address, 200, newLockTime, { from: OWNER });
-      result = await daoVault.getTimeLockInfo(USER1, erc20.address);
-      assert.equal(result.withdrawalAmount, 900);
-      assert.equal(result.lockedAmount, 200);
-      assert.equal(result.unlockTime, newLockTime);
+      const newLockTime = Number(await getCurrentBlockTime()) + 1000;
+      await daoVault.lock(USER1.address, erc20.address, 200, newLockTime);
+      result = await daoVault.getTimeLockInfo(USER1.address, erc20.address);
+      expect(result.withdrawalAmount).to.equal(900);
+      expect(result.lockedAmount).to.equal(200);
+      expect(result.unlockTime).to.equal(newLockTime);
 
-      await daoVault.lock(USER1, erc20.address, 800, newLockTime + 10, { from: OWNER });
-      result = await daoVault.getTimeLockInfo(USER1, erc20.address);
-      assert.equal(result.withdrawalAmount, 300);
-      assert.equal(result.lockedAmount, 800);
-      assert.equal(result.unlockTime, newLockTime + 10);
+      await daoVault.lock(USER1.address, erc20.address, 800, newLockTime + 10);
+      result = await daoVault.getTimeLockInfo(USER1.address, erc20.address);
+      expect(result.withdrawalAmount).to.equal(300);
+      expect(result.lockedAmount).to.equal(800);
+      expect(result.unlockTime).to.equal(newLockTime + 10);
     });
 
     it("should not lock ERC20 for too big period", async () => {
-      await daoVault.depositERC20(erc20.address, 1000, { from: USER1 });
-      const oneYearLater = (await getCurrentBlockTime()) + 365 * 24 * 60 * 60 + 10;
-      await truffleAssert.reverts(
-        daoVault.lock(USER1, erc20.address, 1000, oneYearLater, { from: OWNER }),
-        "[QGDK-007002]-The lock time is too big."
+      await daoVault.connect(USER1).depositERC20(erc20.address, 1000);
+      const oneYearLater = Number(await getCurrentBlockTime()) + 365 * 24 * 60 * 60 + 10;
+
+      await expect(daoVault.lock(USER1.address, erc20.address, 1000, oneYearLater)).to.be.revertedWith(
+        "DAOVault: The lock time is too big."
       );
     });
 
     it("should lock Native tokens", async () => {
-      await daoVault.depositNative({ from: USER1, value: 1000 });
-      await truffleAssert.passes(daoVault.lock(USER1, ETHEREUM_ADDRESS, 1000, 1000, { from: OWNER }), "passes");
+      await daoVault.connect(USER1).depositNative({ value: 1000 });
+      await daoVault.lock(USER1.address, ETHEREUM_ADDRESS, 1000, 1000);
 
-      assert.equal(await daoVault.userTokenBalance(USER1, ETHEREUM_ADDRESS), 1000);
+      expect(await daoVault.getUserTokenBalance(USER1.address, ETHEREUM_ADDRESS)).to.equal(1000);
     });
 
     it("should lock ERC721 tokens and only one", async () => {
-      await truffleAssert.reverts(
-        daoVault.lock(USER1, erc721.address, 1, 0, { from: OWNER }),
-        "[QGDK-007008]-No NFT to lock."
+      await expect(daoVault.lock(USER1.address, erc721.address, 1, 0)).to.be.revertedWith("DAOVault: No NFT to lock.");
+
+      await expect(daoVault.connect(USER1).lock(USER1.address, erc721.address, 1, 0)).to.be.revertedWith(
+        "DAOVault: The sender is not allowed to perform the action, access denied."
       );
 
-      await truffleAssert.reverts(
-        daoVault.lock(USER1, erc721.address, 1, 1000, { from: USER1 }),
-        "[QGDK-007010]-The sender is not allowed to perform the action, access denied."
+      const oneYearLater = Number(await getCurrentBlockTime()) + 365 * 24 * 60 * 60 + 10;
+      await expect(daoVault.lock(USER1.address, erc721.address, 1, oneYearLater)).to.be.revertedWith(
+        "DAOVault: The lock time is too big."
       );
 
-      const oneYearLater = (await getCurrentBlockTime()) + 365 * 24 * 60 * 60 + 10;
-      await truffleAssert.reverts(
-        daoVault.lock(USER1, erc721.address, 1, oneYearLater, { from: OWNER }),
-        "[QGDK-007002]-The lock time is too big."
-      );
+      expect(await daoVault.getUserVotingPower(USER1.address, erc721.address)).to.equal(0);
 
-      assert.equal(await daoVault.getUserVotingPower(USER1, erc721.address), 0);
+      await daoVault.connect(USER1).depositNFT(erc721.address, 0);
+      await daoVault.connect(USER1).depositNFT(erc721.address, 1);
+      await daoVault.lock(USER1.address, erc721.address, 0, 1000);
 
-      await daoVault.depositNFT(erc721.address, 0, { from: USER1 });
-      await daoVault.depositNFT(erc721.address, 1, { from: USER1 });
-      await truffleAssert.passes(daoVault.lock(USER1, erc721.address, 0, 1000, { from: OWNER }), "passes");
+      expect(await daoVault.getUserVotingPower(USER1.address, erc721.address)).to.equal(1);
 
-      assert.equal(await daoVault.getUserVotingPower(USER1, erc721.address), 1);
+      await daoVault.lock(USER1.address, erc721.address, 0, 300);
+      await daoVault.lock(USER1.address, erc721.address, 0, 2000);
 
-      await truffleAssert.passes(daoVault.lock(USER1, erc721.address, 0, 300, { from: OWNER }), "passes");
-      await truffleAssert.passes(daoVault.lock(USER1, erc721.address, 0, 2000, { from: OWNER }), "passes");
-
-      assert.equal(await daoVault.getUserVotingPower(USER1, erc721.address), 1);
+      expect(await daoVault.getUserVotingPower(USER1.address, erc721.address)).to.equal(1);
     });
 
     it("should be able to check authorization with SBT", async () => {
-      await truffleAssert.reverts(
-        daoVault.lock(USER2, sbt.address, 0, 0, { from: OWNER }),
-        "[QGDK-007006]-The user does not have the SBT token."
+      await expect(daoVault.lock(USER2.address, sbt.address, 0, 0)).to.be.revertedWith(
+        "DAOVault: The user does not have the SBT token."
       );
 
-      await truffleAssert.passes(daoVault.lock(USER1, sbt.address, 0, 0, { from: OWNER }), "passes");
+      await daoVault.lock(USER1.address, sbt.address, 0, 0);
 
-      await truffleAssert.passes(daoVault.lock(USER1, sbt.address, 0, 0, { from: OWNER }), "passes");
+      await daoVault.lock(USER1.address, sbt.address, 0, 0);
     });
   });
 
   describe("withdraw", () => {
     it("should withdraw ERC20 tokens", async () => {
-      await daoVault.depositERC20(erc20.address, 1000, { from: USER1 });
+      await daoVault.connect(USER1).depositERC20(erc20.address, 1000);
 
-      assert.equal(await daoVault.userTokenBalance(USER1, erc20.address), 1000);
-      assert.deepEqual(await manager.getUserGroups(USER1), [`DAOGroup:DAO_REGISTRY`]);
+      expect(await daoVault.getUserTokenBalance(USER1.address, erc20.address)).to.equal(1000);
+      expect(await manager.getUserGroups(USER1.address)).to.deep.equal([`DAOGroup:DAO Token Holder`]);
 
-      await daoVault.withdrawERC20(erc20.address, 1000, { from: USER1 });
+      await daoVault.connect(USER1).withdrawERC20(erc20.address, 1000);
 
-      assert.equal(toBN(await daoVault.userTokenBalance(USER1, erc20.address)).toString(), "0");
-      assert.deepEqual(await manager.getUserGroups(USER1), []);
+      expect(await daoVault.getUserTokenBalance(USER1.address, erc20.address)).to.equal(0);
+      expect(await manager.getUserGroups(USER1.address)).to.deep.equal([]);
     });
 
     it("should not withdraw locked ERC20 tokens", async () => {
-      await daoVault.depositERC20(erc20.address, 1000, { from: USER1 });
+      await daoVault.connect(USER1).depositERC20(erc20.address, 1000);
 
-      assert.equal(await daoVault.userTokenBalance(USER1, erc20.address), 1000);
-      assert.deepEqual(await manager.getUserGroups(USER1), [`DAOGroup:DAO_REGISTRY`]);
+      expect(await daoVault.getUserTokenBalance(USER1.address, erc20.address)).to.equal(1000);
+      expect(await manager.getUserGroups(USER1.address)).to.deep.equal([`DAOGroup:DAO Token Holder`]);
 
-      const lockTime = toBN(await getCurrentBlockTime()).plus(100);
-      await daoVault.lock(USER1, erc20.address, 1000, lockTime, { from: OWNER });
+      const lockTime = toBN(await getCurrentBlockTime())
+        .plus(100)
+        .toString();
+      await daoVault.lock(USER1.address, erc20.address, 1000, lockTime);
 
-      await truffleAssert.reverts(
-        daoVault.lock(USER1, erc20.address, 0, lockTime, { from: OWNER }),
-        "[QGDK-007003]-The amount to lock should be more than 0."
+      await expect(daoVault.lock(USER1.address, erc20.address, 0, lockTime)).to.be.revertedWith(
+        "DAOVault: The amount to lock should be more than 0."
       );
 
-      await truffleAssert.reverts(
-        daoVault.withdrawERC20(erc20.address, 1000, { from: USER1 }),
-        "[QGDK-007009]-Trying to withdraw more than locked."
+      await expect(daoVault.connect(USER1).withdrawERC20(erc20.address, 1000)).to.be.revertedWith(
+        "DAOVault: Trying to withdraw more than locked."
       );
 
-      await setTime(lockTime.plus(1).toNumber());
+      await setTime(toBN(lockTime).plus(1).toNumber());
 
-      await truffleAssert.passes(daoVault.withdrawERC20(erc20.address, 500, { from: USER1 }), "passes");
+      await daoVault.connect(USER1).withdrawERC20(erc20.address, 500);
 
-      assert.deepEqual(await manager.getUserGroups(USER1), [`DAOGroup:DAO_REGISTRY`]);
+      expect(await manager.getUserGroups(USER1.address)).to.deep.equal([`DAOGroup:DAO Token Holder`]);
 
-      await truffleAssert.passes(daoVault.withdrawERC20(erc20.address, 500, { from: USER1 }), "passes");
+      await daoVault.connect(USER1).withdrawERC20(erc20.address, 500);
 
-      assert.deepEqual(await manager.getUserGroups(USER1), []);
+      expect(await manager.getUserGroups(USER1.address)).to.deep.equal([]);
     });
 
     it("should withdraw Native tokens", async () => {
-      const balanceBefore = toBN(await web3.eth.getBalance(USER1));
+      const balanceBefore = toBN((await getBalance(USER1.address)) as unknown as string);
 
-      await daoVault.depositNative({ from: USER1, value: ether });
+      await daoVault.connect(USER1).depositNative({ value: ether });
 
-      assert.equal(await daoVault.userTokenBalance(USER1, ETHEREUM_ADDRESS), ether.toString());
+      expect(await daoVault.getUserTokenBalance(USER1.address, ETHEREUM_ADDRESS)).to.equal(ether);
 
-      assert.approximately(
-        toBN(await getBalance(USER1)).toNumber(),
+      expect(toBN((await getBalance(USER1.address)) as unknown as string).toNumber()).to.be.closeTo(
         balanceBefore.minus(ether).toNumber(),
-        ether.div(100).toNumber()
+        toBN(ether).div(100).toNumber()
       );
 
-      assert.equal((await daoVault.getTokenSupply(ETHEREUM_ADDRESS)).toString(), ether.toString());
+      expect(await daoVault.getTokenSupply(ETHEREUM_ADDRESS)).to.equal(ether);
 
-      await daoVault.withdrawNative(ether, { from: USER1 });
+      await daoVault.connect(USER1).withdrawNative(ether);
 
-      assert.equal(await daoVault.userTokenBalance(USER1, ETHEREUM_ADDRESS), 0);
+      expect(await daoVault.getUserTokenBalance(USER1.address, ETHEREUM_ADDRESS)).to.equal(0);
 
-      assert.approximately(
-        toBN(await getBalance(USER1)).toNumber(),
+      expect(toBN((await getBalance(USER1.address)) as unknown as string).toNumber()).to.be.closeTo(
         balanceBefore.toNumber(),
-        ether.div(100).toNumber()
+        toBN(ether).div(100).toNumber()
       );
 
-      assert.equal((await daoVault.getTokenSupply(ETHEREUM_ADDRESS)).toString(), "0");
+      expect(await daoVault.getTokenSupply(ETHEREUM_ADDRESS)).to.equal(0);
     });
 
     it("should not withdraw locked Native tokens", async () => {
-      await daoVault.depositNative({ from: USER1, value: 1000 });
+      await daoVault.connect(USER1).depositNative({ value: 1000 });
 
       const lockTime = toBN(await getCurrentBlockTime()).plus(100);
-      await daoVault.lock(USER1, ETHEREUM_ADDRESS, 1000, lockTime, { from: OWNER });
+      await daoVault.lock(USER1.address, ETHEREUM_ADDRESS, 1000, lockTime.toString());
 
-      await truffleAssert.reverts(
-        daoVault.withdrawNative(1000, { from: USER1 }),
-        "[QGDK-007009]-Trying to withdraw more than locked."
+      await expect(daoVault.connect(USER1).withdrawNative(1000)).to.be.revertedWith(
+        "DAOVault: Trying to withdraw more than locked."
       );
 
-      await setTime(lockTime.plus(1).toNumber());
+      await setTime(toBN(lockTime).plus(1).toNumber());
 
-      await daoVault.withdrawNative(1000, { from: USER1 });
+      await daoVault.connect(USER1).withdrawNative(1000);
 
-      assert.equal(await daoVault.userTokenBalance(USER1, ETHEREUM_ADDRESS), 0);
+      expect(await daoVault.getUserTokenBalance(USER1.address, ETHEREUM_ADDRESS)).to.equal(0);
     });
 
     it("should delete from the group only if all tokens are withdrawn", async () => {
-      await daoVault.depositNative({ from: USER1, value: 1000 });
-      await daoVault.depositERC20(erc20.address, 1000, { from: USER1 });
+      await daoVault.connect(USER1).depositNative({ value: 1000 });
+      await daoVault.connect(USER1).depositERC20(erc20.address, 1000);
 
-      await daoVault.withdrawNative(1000, { from: USER1 });
+      await daoVault.connect(USER1).withdrawNative(1000);
 
-      assert.deepEqual(await manager.getUserGroups(USER1), [`DAOGroup:DAO_REGISTRY`]);
+      expect(await manager.getUserGroups(USER1.address)).to.deep.equal([`DAOGroup:DAO Token Holder`]);
 
-      await daoVault.withdrawERC20(erc20.address, 1000, { from: USER1 });
+      await daoVault.connect(USER1).withdrawERC20(erc20.address, 1000);
 
-      assert.deepEqual(await manager.getUserGroups(USER1), []);
+      expect(await manager.getUserGroups(USER1.address)).to.deep.equal([]);
     });
 
     it("should revert if amount was not withdrawn", async () => {
       await impersonate(erc20.address);
       await setBalance(erc20.address);
-      await web3.eth.sendTransaction({
-        from: erc20.address,
+
+      const signer = await ethers.getSigner(erc20.address);
+
+      const tx = {
         to: daoVault.address,
         value: 1000,
-      });
+      };
 
-      await truffleAssert.reverts(
-        daoVault.withdrawNative(1000, { from: erc20.address }),
-        "[QGDK-019000]-Transferring of native currency failed."
+      const receiptTx = await signer.sendTransaction(tx);
+
+      await receiptTx.wait();
+
+      await expect(daoVault.withdrawNative(1000)).to.be.revertedWith("DAOVault: Not enough tokens to withdraw.");
+
+      await expect(daoVault.connect(signer).withdrawNative(1000)).to.be.revertedWith(
+        "TokenBalance: Transferring of native currency failed."
       );
     });
 
     it("should withdraw ERC721 tokens", async () => {
-      await daoVault.depositNFT(erc721.address, 0, { from: USER1 });
+      await daoVault.connect(USER1).depositNFT(erc721.address, 0);
 
-      assert.deepEqual(castBN(await daoVault.getUserNFTs(USER1, erc721.address)), ["0"]);
+      expect(castBN(await daoVault.getUserNFTs(USER1.address, erc721.address))).to.deep.equal([0]);
 
-      await daoVault.depositNFT(erc721.address, 1, { from: USER1 });
+      await daoVault.connect(USER1).depositNFT(erc721.address, 1);
 
-      assert.deepEqual(castBN(await daoVault.getUserNFTs(USER1, erc721.address)), ["0", "1"]);
+      expect(castBN(await daoVault.getUserNFTs(USER1.address, erc721.address))).to.deep.equal([0, 1]);
 
-      await truffleAssert.passes(daoVault.lock(USER1, erc721.address, 1, 1000, { from: OWNER }), "passes");
+      await daoVault.lock(USER1.address, erc721.address, 1, 1000);
 
-      await truffleAssert.reverts(
-        daoVault.withdrawNFT(erc721.address, 0, { from: USER1 }),
-        "[QGDK-007004]-Trying to withdraw locked NFT."
+      await expect(daoVault.connect(USER1).withdrawNFT(erc721.address, 0)).to.be.revertedWith(
+        "DAOVault: Trying to withdraw locked NFT."
       );
 
-      await truffleAssert.passes(daoVault.withdrawNFT(erc721.address, 1, { from: USER1 }), "passes");
+      expect(await daoVault.getUserVotingPower(USER1.address, erc721.address)).to.equal(1);
 
-      assert.equal(await daoVault.getUserVotingPower(USER1, erc721.address), 1);
+      await setTime(Number(await getCurrentBlockTime()) + 1000);
 
-      await setTime((await getCurrentBlockTime()) + 1000);
-
-      await truffleAssert.passes(daoVault.withdrawNFT(erc721.address, 0, { from: USER1 }), "passes");
+      await daoVault.connect(USER1).withdrawNFT(erc721.address, 0);
     });
 
     it("should withdraw different ERC721 tokens", async () => {
-      await daoVault.depositNFT(erc721.address, 0, { from: USER1 });
-      await daoVault.depositNFT(erc721_2.address, 0, { from: USER1 });
+      await daoVault.connect(USER1).depositNFT(erc721.address, 0);
+      await daoVault.connect(USER1).depositNFT(erc721_2.address, 0);
 
-      assert.deepEqual(await manager.getUserGroups(USER1), [`DAOGroup:DAO_REGISTRY`]);
+      expect(await manager.getUserGroups(USER1.address)).to.deep.equal([`DAOGroup:DAO Token Holder`]);
 
-      await truffleAssert.passes(daoVault.withdrawNFT(erc721.address, 0, { from: USER1 }), "passes");
+      await daoVault.connect(USER1).withdrawNFT(erc721.address, 0);
 
-      assert.deepEqual(await manager.getUserGroups(USER1), [`DAOGroup:DAO_REGISTRY`]);
+      expect(await manager.getUserGroups(USER1.address)).to.deep.equal([`DAOGroup:DAO Token Holder`]);
 
-      await truffleAssert.passes(daoVault.withdrawNFT(erc721_2.address, 0, { from: USER1 }), "passes");
+      await daoVault.connect(USER1).withdrawNFT(erc721_2.address, 0);
 
-      assert.deepEqual(await manager.getUserGroups(USER1), []);
+      expect(await manager.getUserGroups(USER1.address)).to.deep.equal([]);
     });
 
     it("should revoke SBT Authorization", async () => {
-      await truffleAssert.reverts(
-        daoVault.revokeSBTAuthorization(sbt.address, { from: USER2 }),
-        "[QGDK-007005]-The user is not authorized or token does not supported."
+      await expect(daoVault.connect(USER2).revokeSBTAuthorization(sbt.address)).to.be.revertedWith(
+        "DAOVault: The user is not authorized or token does not supported."
       );
 
-      await daoVault.authorizeBySBT(sbt.address, { from: USER1 });
+      await daoVault.connect(USER1).authorizeBySBT(sbt.address);
 
-      await truffleAssert.passes(daoVault.revokeSBTAuthorization(sbt.address, { from: USER1 }), "passes");
+      await daoVault.connect(USER1).revokeSBTAuthorization(sbt.address);
     });
   });
 
   describe("getters", () => {
     it("should get list of user tokens", async () => {
-      await daoVault.depositNative({ from: USER1, value: 1000 });
-      await daoVault.depositERC20(erc20.address, 1000, { from: USER1 });
+      await daoVault.connect(USER1).depositNative({ value: 1000 });
+      await daoVault.connect(USER1).depositERC20(erc20.address, 1000);
 
-      assert.deepEqual(await daoVault.getUserTokens(USER1), [ETHEREUM_ADDRESS, erc20.address]);
+      expect(await daoVault.getUserTokens(USER1.address)).to.deep.equal([ETHEREUM_ADDRESS, erc20.address]);
     });
   });
 });

@@ -6,8 +6,5 @@ export async function impersonate(address: any) {
     params: [address],
   });
 
-  await network.provider.send("hardhat_setBalance", [
-    address,
-    "0xFFFFFFFFFFFFFFFF",
-  ]);
+  await network.provider.send("hardhat_setBalance", [address, "0xFFFFFFFFFFFFFFFF"]);
 }

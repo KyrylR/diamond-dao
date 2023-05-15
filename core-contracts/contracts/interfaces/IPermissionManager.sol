@@ -4,7 +4,6 @@ pragma solidity 0.8.19;
 import "../core/DAOMemberStorage.sol";
 
 import "./RBAC/IRBAC.sol";
-import "./IDAOResource.sol";
 
 /**
  * @title IPermissionManager
@@ -12,7 +11,7 @@ import "./IDAOResource.sol";
  *
  * This interface provides methods for configuring and managing permissions and roles in a DAO.
  */
-interface IPermissionManager is IRBAC, IDAOResource {
+interface IPermissionManager is IRBAC {
     /**
      * @dev Struct to pass constructor parameters to the IPermissionManager implementation contract.
      * @param master The address of the DAO master to set as the initial owner.

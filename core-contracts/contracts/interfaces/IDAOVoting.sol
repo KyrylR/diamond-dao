@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import "./IDAOResource.sol";
-
 enum VotingType {
     NON_RESTRICTED,
     RESTRICTED,
@@ -13,7 +11,7 @@ enum VotingType {
  * @title IDAOVoting
  * @dev Interface for a contract that manages voting and proposals for a DAO.
  */
-interface IDAOVoting is IDAOResource {
+interface IDAOVoting {
     enum ProposalStatus {
         NONE,
         PENDING,

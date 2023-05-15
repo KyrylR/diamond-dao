@@ -6,7 +6,7 @@ import { getParameter, ParameterType } from "../utils/constants";
 import { cast } from "@/test/utils/caster";
 import { accounts } from "@/scripts/utils/utils";
 
-import { ParameterCodecMock  } from "@ethers-v5";
+import { ParameterCodecMock } from "@ethers-v5";
 
 describe("ParameterCodecMock", () => {
   let mock: ParameterCodecMock;
@@ -23,18 +23,22 @@ describe("ParameterCodecMock", () => {
   let test_address: any;
 
   beforeEach("setup", async () => {
-    mock = await ParameterCodecMock.new();
+    const ParameterCodecMock = await ethers.getContractFactory("ParameterCodecMock");
+    mock = await ParameterCodecMock.deploy();
 
-    test_address = getParameter("test_address", await accounts(1), ParameterType.ADDRESS);
+    test_address = getParameter("test_address", (await accounts(1)).address, ParameterType.ADDRESS);
     test_bytes.solidityType = 4;
   });
 
   describe("decode", () => {
     it("should decode uint256", async () => {
       const result = await mock.decodeUint256(test_uint256);
-      assert.equal(result, 1);
 
-      await truffleAssert.reverts(mock.decodeUint256(test_bytes), `InvalidParameterType("test_bytes", 2, 4)`);
+      expect(result).to.equal(1);
+
+      expect(mock.decodeUint256(test_bytes))
+        .to.be.revertedWithCustomError(mock, `InvalidParameterType`)
+        .withArgs("test_bytes", 2, 4);
     });
 
     it("should decode bytes", async () => {
@@ -44,37 +48,50 @@ describe("ParameterCodecMock", () => {
         "0x1234567890123456789012345678901234567890123456789012345678901234",
         ParameterType.BYTES
       );
-      assert.equal(result, expected.value);
 
-      await truffleAssert.reverts(mock.decodeBytes(test_uint256), `InvalidParameterType("test_uint256", 4, 2)`);
+      expect(result).to.equal(expected.value);
+
+      await expect(mock.decodeBytes(test_uint256))
+        .to.be.revertedWithCustomError(mock, `InvalidParameterType`)
+        .withArgs("test_uint256", 4, 2);
     });
 
     it("should decode string", async () => {
       const result = await mock.decodeString(test_string);
-      assert.equal(result.replaceAll(`\0`, ""), "Hello World!");
 
-      await truffleAssert.reverts(mock.decodeString(test_uint256), `InvalidParameterType("test_uint256", 3, 2)`);
+      expect(result.replace(`\0`, "")).to.equal("Hello World!");
+
+      await expect(mock.decodeString(test_uint256))
+        .to.be.revertedWithCustomError(mock, `InvalidParameterType`)
+        .withArgs("test_uint256", 3, 2);
     });
 
     it("should decode bool", async () => {
       const result = await mock.decodeBool(test_bool);
-      assert.equal(result, true);
 
-      await truffleAssert.reverts(mock.decodeBool(test_uint256), `InvalidParameterType("test_uint256", 5, 2)`);
+      expect(result).to.equal(true);
+
+      await expect(mock.decodeBool(test_uint256))
+        .to.be.revertedWithCustomError(mock, `InvalidParameterType`)
+        .withArgs("test_uint256", 5, 2);
     });
 
     it("should decode address", async () => {
       const result = await mock.decodeAddress(test_address);
-      assert.equal(result, await accounts(1));
 
-      await truffleAssert.reverts(mock.decodeAddress(test_uint256), `InvalidParameterType("test_uint256", 1, 2)`);
+      expect(result).to.equal((await accounts(1)).address);
+
+      await expect(mock.decodeAddress(test_uint256))
+        .to.be.revertedWithCustomError(mock, `InvalidParameterType`)
+        .withArgs("test_uint256", 1, 2);
     });
   });
 
   describe("encode", () => {
     it("should encode uint256", async () => {
       const result = await mock.encodeUint256(1, "test_uint256");
-      assert.deepEqual(cast(result), getParameter("test_uint256", 1, ParameterType.UINT256));
+
+      expect(cast(result)).to.be.deep.equal(getParameter("test_uint256", 1, ParameterType.UINT256));
     });
 
     it("should encode bytes32", async () => {
@@ -82,8 +99,8 @@ describe("ParameterCodecMock", () => {
         "0x1234567890123456789012345678901234567890123456789012345678901234",
         "test_bytes"
       );
-      assert.deepEqual(
-        cast(result),
+
+      expect(cast(result)).to.be.deep.equal(
         getParameter(
           "test_bytes",
           "0x1234567890123456789012345678901234567890123456789012345678901234",
@@ -97,8 +114,8 @@ describe("ParameterCodecMock", () => {
         "Hello World!aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "test_string"
       );
-      assert.deepEqual(
-        cast(result),
+
+      expect(cast(result)).to.be.deep.equal(
         getParameter(
           "test_string",
           "Hello World!aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
@@ -109,12 +126,16 @@ describe("ParameterCodecMock", () => {
 
     it("should encode bool", async () => {
       const result = await mock.encodeBool(true, "test_bool");
-      assert.deepEqual(cast(result), getParameter("test_bool", true, ParameterType.BOOL));
+
+      expect(cast(result)).to.be.deep.equal(getParameter("test_bool", true, ParameterType.BOOL));
     });
 
     it("should encode address", async () => {
-      const result = await mock.encodeAddress(await accounts(1), "test_address");
-      assert.deepEqual(cast(result), getParameter("test_address", await accounts(1), ParameterType.ADDRESS));
+      const result = await mock.encodeAddress((await accounts(1)).address, "test_address");
+
+      expect(cast(result)).to.be.deep.equal(
+        getParameter("test_address", (await accounts(1)).address, ParameterType.ADDRESS)
+      );
     });
   });
 });

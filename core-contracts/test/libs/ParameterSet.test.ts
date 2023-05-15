@@ -1,18 +1,18 @@
 import { expect } from "chai";
-import {ethers} from "hardhat";
+import { ethers } from "hardhat";
 
-const { getParameter, ParameterType } = require("../utils/constants");
-const { cast } = require("../utils/caster");
+import { getParameter, ParameterType } from "../utils/constants";
 
-const ParameterSetMock = artifacts.require("ParameterSetMock");
+import { cast } from "@/test/utils/caster";
 
-ParameterSetMock.numberFormat = "BigNumber";
+import { ParameterSetMock } from "@ethers-v5";
 
 describe("ParameterSetMock", () => {
-  let mock;
+  let mock: ParameterSetMock;
 
   beforeEach("setup", async () => {
-    mock = await ParameterSetMock.new();
+    const ParameterSetMock = await ethers.getContractFactory("ParameterSetMock");
+    mock = await ParameterSetMock.deploy();
   });
 
   describe("add()", () => {
@@ -25,9 +25,9 @@ describe("ParameterSetMock", () => {
 
       let set = await mock.getSet();
 
-      assert.equal(set.length, 2);
-      assert.deepEqual(cast(set[0]), expected1);
-      assert.deepEqual(cast(set[1]), expected2);
+      expect(set.length).to.equal(2);
+      expect(cast(set[0])).to.deep.equal(expected1);
+      expect(cast(set[1])).to.deep.equal(expected2);
     });
 
     it("should add empty Parameter", async () => {
@@ -37,8 +37,8 @@ describe("ParameterSetMock", () => {
 
       let set = await mock.getSet();
 
-      assert.equal(set.length, 1);
-      assert.deepEqual(cast(set[0]), expected);
+      expect(set.length).to.equal(1);
+      expect(cast(set[0])).to.deep.equal(expected);
     });
 
     it("should add same Parameter twice", async () => {
@@ -49,8 +49,8 @@ describe("ParameterSetMock", () => {
 
       let set = await mock.getSet();
 
-      assert.equal(set.length, 1);
-      assert.deepEqual(cast(set[0]), expected);
+      expect(set.length).to.equal(1);
+      expect(cast(set[0])).to.deep.equal(expected);
     });
   });
 
@@ -59,15 +59,13 @@ describe("ParameterSetMock", () => {
       let expected = getParameter("test", "string", ParameterType.STRING);
 
       await mock.add(expected);
-      expected.value = web3.eth.abi.encodeParameter(
-        "bytes32",
-        web3.utils.encodePacked({ value: "new value", type: "string" })
-      );
+      const coder = new ethers.utils.AbiCoder();
+      expected.value = coder.encode(["string"], ["new value"]);
       await mock.change(expected);
 
       let set = await mock.getSet();
-      assert.equal(set.length, 1);
-      assert.deepEqual(cast(set[0]), expected);
+      expect(set.length).to.equal(1);
+      expect(cast(set[0])).to.deep.equal(expected);
     });
 
     it("should change non-existent Parameter", async () => {
@@ -76,7 +74,7 @@ describe("ParameterSetMock", () => {
       await mock.change(expected);
 
       let set = await mock.getSet();
-      assert.equal(set.length, 0);
+      expect(set.length).to.equal(0);
     });
   });
 
@@ -88,7 +86,7 @@ describe("ParameterSetMock", () => {
       await mock.remove(expected.name);
 
       let set = await mock.getSet();
-      assert.equal(set.length, 0);
+      expect(set.length).to.equal(0);
     });
 
     it("should call remove at empty set", async () => {
@@ -97,7 +95,7 @@ describe("ParameterSetMock", () => {
       await mock.remove(expected.name);
 
       let set = await mock.getSet();
-      assert.equal(set.length, 0);
+      expect(set.length).to.equal(0);
     });
 
     it("should remove non-existent Parameter", async () => {
@@ -107,8 +105,8 @@ describe("ParameterSetMock", () => {
       await mock.remove("non-existent");
 
       let set = await mock.getSet();
-      assert.equal(set.length, 1);
-      assert.deepEqual(cast(set[0]), expected);
+      expect(set.length).to.equal(1);
+      expect(cast(set[0])).to.deep.equal(expected);
     });
 
     it("should remove from middle", async () => {
@@ -123,9 +121,9 @@ describe("ParameterSetMock", () => {
       await mock.remove(expected2.name);
 
       let set = await mock.getSet();
-      assert.equal(set.length, 2);
-      assert.deepEqual(cast(set[0]), expected1);
-      assert.deepEqual(cast(set[1]), expected3);
+      expect(set.length).to.equal(2);
+      expect(cast(set[0])).to.deep.equal(expected1);
+      expect(cast(set[1])).to.deep.equal(expected3);
     });
   });
 
@@ -135,13 +133,13 @@ describe("ParameterSetMock", () => {
 
       await mock.add(expected);
 
-      assert.isTrue(await mock.contains(expected.name));
+      expect(await mock.contains(expected.name)).to.be.true;
     });
 
     it("should return false", async () => {
       let expected = getParameter("test", "string", ParameterType.STRING);
 
-      assert.isFalse(await mock.contains(expected.name));
+      expect(await mock.contains(expected.name)).to.be.false;
     });
   });
 
@@ -154,7 +152,7 @@ describe("ParameterSetMock", () => {
         await mock.add(expected);
       }
 
-      assert.equal(await mock.length(), 10);
+      expect(await mock.length()).to.equal(10);
     });
   });
 
@@ -169,7 +167,7 @@ describe("ParameterSetMock", () => {
 
       for (let i = 0; i < 10; i++) {
         expected.name = "test" + i;
-        assert.deepEqual(cast(await mock.at(i)), expected);
+        expect(cast(await mock.at(i))).to.deep.equal(expected);
       }
     });
   });
@@ -185,7 +183,7 @@ describe("ParameterSetMock", () => {
 
       for (let i = 0; i < 10; i++) {
         expected.name = "test" + i;
-        assert.deepEqual(cast(await mock.get(expected.name)), expected);
+        expect(cast(await mock.get(expected.name))).to.deep.equal(expected);
       }
     });
   });
@@ -200,10 +198,10 @@ describe("ParameterSetMock", () => {
       }
 
       let values = await mock.values();
-      assert.equal(values.length, 10);
+      expect(values.length).to.equal(10);
       for (let i = 0; i < 10; i++) {
         expected.name = "test" + i;
-        assert.deepEqual(cast(values[i]), expected);
+        expect(cast(values[i])).to.deep.equal(expected);
       }
     });
   });

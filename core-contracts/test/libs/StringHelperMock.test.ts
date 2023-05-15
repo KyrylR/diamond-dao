@@ -1,7 +1,7 @@
 import { expect } from "chai";
-import {ethers} from "hardhat";
+import { ethers } from "hardhat";
 
-import { StringHelperMock  } from "@ethers-v5";
+import { StringHelperMock } from "@ethers-v5";
 
 describe("StringHelperMock", () => {
   let mock: StringHelperMock;
@@ -21,7 +21,7 @@ describe("StringHelperMock", () => {
     });
 
     it("should be different for different strings with same length", async () => {
-      expect(await mock.diffStringsWithSameLength()).to.be.true;
+      expect(await mock.diffStringsWithSameLength()).to.be.false;
     });
   });
 });

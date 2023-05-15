@@ -135,6 +135,7 @@ describe("DAOVault", () => {
         await daoVault.getUserTokenBalance(USER1.address, erc20.address)
       );
       expect(await daoVault.getTokenSupply(erc20.address)).to.equal(10000000);
+      expect(await daoVault.getTokenBalance(erc20.address)).to.equal(1000);
     });
 
     it("should be able to deposit Native tokens", async () => {
@@ -422,6 +423,8 @@ describe("DAOVault", () => {
       await expect(daoVault.connect(USER1).withdrawNFT(erc721.address, 0)).to.be.revertedWith(
         "DAOVault: Trying to withdraw locked NFT."
       );
+
+      await daoVault.connect(USER1).withdrawNFT(erc721.address, 1);
 
       expect(await daoVault.getUserVotingPower(USER1.address, erc721.address)).to.equal(1);
 

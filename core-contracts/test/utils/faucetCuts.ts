@@ -80,6 +80,8 @@ export const DAOVaultFuncSigs: FuncNameToSignature = {
 };
 
 export const DAOVotingFuncSigs: FuncNameToSignature = {
+  "changeVotingToken(address)": "0x54dfc2ed",
+  "getVotingToken()": "0xe28c3b19",
   "getDAOVotingStorage()": "0x07e658c7",
   "getProposal(uint256)": "0xc7f758a8",
   "getProposalList(uint256,uint256)": "0x73708b1b",
@@ -89,7 +91,7 @@ export const DAOVotingFuncSigs: FuncNameToSignature = {
   "getVotingSituationInfo(string)": "0xd047d877",
   "removeVotingSituation(string)": "0x71834626",
   "__DAOVoting_init(string,address,string)": "0xc345460b",
-  "createDAOVotingSituation(IDAOVoting.InitialSituation)": "0xcebf5361",
+  "createDAOVotingSituation(IDAOVoting.InitialSituation)": "0x3885bfeb",
   "createProposal(string,string,bytes)": "0xb66bfb5f",
   "voteFor(uint256)": "0x86a50535",
   "voteAgainst(uint256)": "0x750e443a",

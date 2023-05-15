@@ -76,6 +76,8 @@ describe("ERC20", async () => {
       await token.mintTo(USER2.address, wei("100"));
 
       expect(await token.balanceOf(USER2.address)).to.equal(wei("100"));
+
+      expect(await token.decimals()).to.be.equal(18);
     });
 
     it("should not exceed the cap", async () => {

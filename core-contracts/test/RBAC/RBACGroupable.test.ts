@@ -76,7 +76,7 @@ describe("RBACGroupable", () => {
     describe("grantGroupRoles", () => {
       it("should revert if no permission", async () => {
         await expect(
-          rbac.grantGroupRoles(GROUP_ALL_ROLES, ALL_ROLES, { from: SECOND.address }),
+          rbac.connect(SECOND).grantGroupRoles(GROUP_ALL_ROLES, ALL_ROLES),
           "RBAC: no CREATE permission for resource RBAC_RESOURCE"
         );
       });
@@ -102,7 +102,7 @@ describe("RBACGroupable", () => {
       describe("revokeGroupRoles", () => {
         it("should revert if no permission", async () => {
           await expect(
-            rbac.revokeGroupRoles(GROUP_ALL_ROLES, ROLES_01, { from: SECOND.address }),
+            rbac.connect(SECOND).revokeGroupRoles(GROUP_ALL_ROLES, ROLES_01),
             "RBAC: no DELETE permission for resource RBAC_RESOURCE"
           );
         });
@@ -121,7 +121,7 @@ describe("RBACGroupable", () => {
       describe("addUserToGroups", () => {
         it("should revert if no permission", async () => {
           await expect(
-            rbac.addUserToGroups(SECOND.address, [GROUP_ROLES01, GROUP_ROLES12], { from: SECOND.address }),
+            rbac.connect(SECOND).addUserToGroups(SECOND.address, [GROUP_ROLES01, GROUP_ROLES12]),
             "RBAC: no CREATE permission for resource RBAC_RESOURCE"
           );
         });
@@ -148,7 +148,7 @@ describe("RBACGroupable", () => {
         describe("removeUserFromGroups", () => {
           it("should revert if no permission", async () => {
             await expect(
-              rbac.removeUserFromGroups(SECOND.address, [GROUP_ROLES01], { from: SECOND.address }),
+              rbac.connect(SECOND).removeUserFromGroups(SECOND.address, [GROUP_ROLES01]),
               "RBAC: no DELETE permission for resource RBAC_RESOURCE"
             );
           });

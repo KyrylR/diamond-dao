@@ -55,6 +55,8 @@ string constant DAO_MEMBER_STORAGE_NAME = "DAO_MEMBER_STORAGE";
 // Used to get the implementation from the master DAO Registry
 string constant DAO_PARAMETER_STORAGE_NAME = "DAO_PARAMETER_STORAGE";
 
+string constant DAO_VAULT_RESOURCE = "DAO_VAULT_RESOURCE";
+
 function getVotingKey(string memory situation_, string memory key_) pure returns (string memory) {
     return string.concat(situation_, ".", key_);
 }

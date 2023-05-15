@@ -76,6 +76,8 @@ contract DiamondDAO is IDiamondCut, DiamondDAOStorage {
             }
         }
 
+        // TODO: add functionality for init contracts
+
         emit DiamondCut(diamondCut_, initContract_, initPayload_);
     }
 

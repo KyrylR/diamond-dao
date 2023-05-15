@@ -1,4 +1,4 @@
 export = {
-  skipFiles: ["mocks", "interfaces"],
+  skipFiles: ["mocks", "interfaces", "libs/ArrayHelper.sol"],
   configureYulOptimizer: true,
 };

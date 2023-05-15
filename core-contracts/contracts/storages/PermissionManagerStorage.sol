@@ -119,27 +119,14 @@ abstract contract PermissionManagerStorage is IPermissionManager, RBACGroupable 
         return getPermissionManagerStorage().vetoGroupTargets.values();
     }
 
-    /**
-     * @inheritdoc IDAOResource
-     */
-    function checkPermission(
-        address account_,
-        string memory permission_
-    ) public view override returns (bool) {
-        return hasPermission(account_, getResource(), permission_);
-    }
-
-    /**
-     * @inheritdoc IDAOResource
-     */
-    function getResource() public view returns (string memory) {
-        return getPermissionManagerStorage().PERMISSION_MANAGER_RESOURCE;
-    }
-
     function _requirePermission(string memory permission_) internal view {
         require(
-            checkPermission(msg.sender, permission_),
-            "[QGDK-008006]-The sender is not allowed to perform the action, access denied."
+            hasPermission(
+                msg.sender,
+                getPermissionManagerStorage().PERMISSION_MANAGER_RESOURCE,
+                permission_
+            ),
+            "PermissionManager: The sender is not allowed to perform the action, access denied."
         );
     }
 

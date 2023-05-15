@@ -13,7 +13,7 @@ import "../interfaces/IDiamondLoupe.sol";
  *
  *  This is the storage contract for the diamond proxy
  */
-contract DiamondDAOStorage is IERC165, IDiamondLoupe {
+abstract contract DiamondDAOStorage is IERC165, IDiamondLoupe {
     using Address for address;
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using EnumerableSet for EnumerableSet.AddressSet;

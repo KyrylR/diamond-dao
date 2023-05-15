@@ -34,8 +34,6 @@ abstract contract DAOVaultStorage is IDAOVault {
     bytes32 public constant DAO_VAULT_STORAGE_SLOT =
         keccak256("diamond.standard.dao.vault.storage");
 
-    string public constant DAO_VAULT_RESOURCE = "DAO_VAULT_RESOURCE";
-
     uint256 public constant MAX_LOCKED_TIME = 365 days;
 
     struct VaultStorage {
@@ -77,6 +75,27 @@ abstract contract DAOVaultStorage is IDAOVault {
         }
 
         return IERC20(tokenAddress_).totalSupply();
+    }
+
+    /**
+     * @inheritdoc IDAOVault
+     */
+    function getUserTokenBalance(
+        address userAddress_,
+        address tokenAddress_
+    ) external view returns (uint256) {
+        VaultStorage storage _vs = getVaultStorage();
+
+        return _vs.userTokenBalance[userAddress_][tokenAddress_];
+    }
+
+    /**
+     * @inheritdoc IDAOVault
+     */
+    function getTokenBalance(address tokenAddress_) external view returns (uint256) {
+        VaultStorage storage _vs = getVaultStorage();
+
+        return _vs.tokenBalance[tokenAddress_];
     }
 
     /**

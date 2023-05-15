@@ -4,25 +4,29 @@ import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 import { Reverter } from "@/test/helpers/reverter";
-import { wei } from "@/scripts/utils/utils";
 
 import {
   CREATE_PERMISSION,
   UPDATE_PERMISSION,
   DELETE_PERMISSION,
-  DAO_REGISTRY_NAME,
-  DefaultVotingParams,
-  DAO_VAULT_NAME,
   DAO_MEMBER_STORAGE_NAME,
-  MASTER_ROLE,
   INTEGRATION_PERMISSION,
-  ETHEREUM_ADDRESS,
-  EXPERTS_VOTING_NAME,
-  GENERAL_VOTING_NAME,
-  ZERO_ADDRESS
+  VOTING_NAME,
+  ZERO_ADDRESS,
+  DAO_PERMISSION_MANAGER_NAME,
+  DAO_RESERVED_NAME,
+  DefaultERC20Params,
+  ERC20_NAME,
+  getDAOPanelResource,
 } from "../utils/constants";
 
-import { DAOVault, DAOVoting, PermissionManager, DAOMemberStorage  } from "@ethers-v5";
+import { DAOVoting, PermissionManager, DAOMemberStorage, DiamondDAO, IRBAC, ERC20Extended } from "@ethers-v5";
+import {
+  buildFaucetCutsFromFuncSigs,
+  DAOMemberStorageFuncSigs,
+  DAOVotingFuncSigs,
+  PermissionManagerFuncSigs,
+} from "@/test/utils/faucetCuts";
 
 describe("PermissionManager", async () => {
   const reverter = new Reverter();
@@ -31,66 +35,100 @@ describe("PermissionManager", async () => {
   let USER1: SignerWithAddress;
   let USER2: SignerWithAddress;
 
-  let manager: PermissionManager;
+  let diamond: DiamondDAO;
   let daoVoting: DAOVoting;
+  let erc20: ERC20Extended;
+  let manager: PermissionManager;
   let daoMemberStorage: DAOMemberStorage;
 
-  const DAORegistryRole1 = "DR1";
   const DAOManagerCreateRole = "DMCR";
   const DAOManagerIntegrationRole = "DMIR";
 
+  let daoVotingResource: string;
+  let daoMemberStorageResource: string;
+  let daoPermissionManagerResource: string;
+
+  const DAORegistryRole1 = "DR1";
+
   const DAO_REGISTRY_RESOURCE = "DAO_REGISTRY_RESOURCE";
-  const DAO_MEMBER_STORAGE_RESOURCE = "DAO_MEMBER_STORAGE_RESOURCE";
 
-  const DAORegistryCreate = [DAO_REGISTRY_RESOURCE, [CREATE_PERMISSION]];
-  const DAORegistryUpdate = [DAO_REGISTRY_RESOURCE, [UPDATE_PERMISSION]];
-  const DAORegistryDelete = [DAO_REGISTRY_RESOURCE, [DELETE_PERMISSION]];
+  const DAORegistryCreate: IRBAC.ResourceWithPermissionsStruct[] = [
+    {
+      resource: DAO_REGISTRY_RESOURCE,
+      permissions: [CREATE_PERMISSION],
+    },
+  ];
 
-  let DAOManagerCreate;
-  let DAOManagerIntegration;
+  const DAORegistryUpdate: IRBAC.ResourceWithPermissionsStruct[] = [
+    {
+      resource: DAO_REGISTRY_RESOURCE,
+      permissions: [UPDATE_PERMISSION],
+    },
+  ];
+
+  const DAORegistryDelete: IRBAC.ResourceWithPermissionsStruct[] = [
+    {
+      resource: DAO_REGISTRY_RESOURCE,
+      permissions: [DELETE_PERMISSION],
+    },
+  ];
 
   before("setup", async () => {
     [OWNER, USER1, USER2] = await ethers.getSigners();
 
-    daoVoting = await GeneralDAOVoting.new();
-    daoMemberStorage = await DAOMemberStorage.new();
+    const DiamondDAO = await ethers.getContractFactory("DiamondDAO");
+    diamond = await DiamondDAO.deploy();
 
-    let daoVault = await DAOVault.new();
+    const DAOMemberStorage = await ethers.getContractFactory("DAOMemberStorage");
+    daoMemberStorage = await DAOMemberStorage.deploy();
 
-    manager = await PermissionManager.new();
+    const DAOVoting = await ethers.getContractFactory("DAOVoting");
+    daoVoting = await DAOVoting.deploy();
 
-    await registry.__DAORegistry_init(
-      (
-        await PermissionManager.new()
-      ).address,
-      OWNER,
-      DAO_REGISTRY_NAME,
-      "Test panel",
-      "daoURI"
-    );
+    const PermissionManager = await ethers.getContractFactory("PermissionManager");
+    manager = await PermissionManager.deploy();
 
-    manager = await PermissionManager.at(await registry.getPermissionManager());
+    const ERC20 = await ethers.getContractFactory("ERC20Extended");
+    erc20 = await ERC20.deploy();
+    await erc20.__ERC20_init(DefaultERC20Params, ERC20_NAME);
 
-    await registry.addProxyContract(DAO_VAULT_NAME, daoVault.address);
-    await registry.addProxyContract(`${DAO_MEMBER_STORAGE_NAME}:Test panel`, daoMemberStorage.address);
+    const votingFaucetCuts = buildFaucetCutsFromFuncSigs(DAOVotingFuncSigs, daoVoting.address, 0);
+    const memberStorageFaucetCuts = buildFaucetCutsFromFuncSigs(DAOMemberStorageFuncSigs, daoMemberStorage.address, 0);
+    const permissionManagerFaucetCuts = buildFaucetCutsFromFuncSigs(PermissionManagerFuncSigs, manager.address, 0);
 
-    daoVault = await DAOVault.at(await registry.getDAOVault());
-    daoMemberStorage = await DAOMemberStorage.at(await registry.getDAOMemberStorage("Test panel"));
+    await diamond.diamondCut(votingFaucetCuts, ethers.constants.AddressZero, "0x");
+    await diamond.diamondCut(memberStorageFaucetCuts, ethers.constants.AddressZero, "0x");
+    await diamond.diamondCut(permissionManagerFaucetCuts, ethers.constants.AddressZero, "0x");
 
-    await daoVault.__DAOVault_init(registry.address);
-    await daoMemberStorage.__DAOMemberStorage_init("Test panel", DAO_MEMBER_STORAGE_RESOURCE);
+    daoVoting = await DAOVoting.attach(diamond.address);
+    manager = await PermissionManager.attach(diamond.address);
+    daoMemberStorage = await DAOMemberStorage.attach(diamond.address);
 
-    const managerResource = await manager.PERMISSION_MANAGER_RESOURCE();
-    DAOManagerCreate = [managerResource, [CREATE_PERMISSION]];
-    DAOManagerIntegration = [managerResource, [INTEGRATION_PERMISSION]];
+    daoVotingResource = getDAOPanelResource(VOTING_NAME, DAO_RESERVED_NAME);
+    daoMemberStorageResource = getDAOPanelResource(DAO_MEMBER_STORAGE_NAME, DAO_RESERVED_NAME);
+    daoPermissionManagerResource = getDAOPanelResource(DAO_PERMISSION_MANAGER_NAME, DAO_RESERVED_NAME);
 
-    await manager.addPermissionsToRole(DAOManagerCreateRole, [DAOManagerCreate], true);
-    await manager.addPermissionsToRole(DAOManagerIntegrationRole, [DAOManagerIntegration], true);
+    await daoVoting.__DAOVoting_init(DAO_RESERVED_NAME, erc20.address, daoVotingResource);
+    await manager.__PermissionManager_init(OWNER.address, daoPermissionManagerResource, DAO_RESERVED_NAME);
+    await daoMemberStorage.__DAOMemberStorage_init(DAO_RESERVED_NAME, daoMemberStorageResource);
 
-    await registry.injectDependencies(DAO_VAULT_NAME);
-    await registry.injectDependencies(`${DAO_MEMBER_STORAGE_NAME}:Test panel`);
+    await manager.initialConfiguration(daoVoting.address, VOTING_NAME, DAO_RESERVED_NAME);
 
-    await manager.grantRoles(daoMemberStorage.address, [MASTER_ROLE]);
+    const DAOManagerCreate: IRBAC.ResourceWithPermissionsStruct[] = [
+      {
+        resource: daoPermissionManagerResource,
+        permissions: [CREATE_PERMISSION],
+      },
+    ];
+    const DAOManagerIntegration: IRBAC.ResourceWithPermissionsStruct[] = [
+      {
+        resource: daoPermissionManagerResource,
+        permissions: [INTEGRATION_PERMISSION],
+      },
+    ];
+
+    await manager.addPermissionsToRole(DAOManagerCreateRole, DAOManagerCreate, true);
+    await manager.addPermissionsToRole(DAOManagerIntegrationRole, DAOManagerIntegration, true);
 
     await reverter.snapshot();
   });
@@ -99,415 +137,246 @@ describe("PermissionManager", async () => {
 
   describe("basic access", () => {
     it("should not initialize twice", async () => {
-      await truffleAssert.reverts(
-        manager.__PermissionManager_init(registry.address, OWNER, "test", "Test panel"),
-        "Initializable: contract is already initialized"
+      await expect(manager.__PermissionManager_init(OWNER.address, "test", "Test panel")).to.be.revertedWith(
+        "RBAC: already initialized"
       );
-    });
-  });
-
-  describe("checkPermission", () => {
-    it("should check permission", async () => {
-      assert.equal(await manager.getResource(), await manager.PERMISSION_MANAGER_RESOURCE());
-
-      assert.isFalse(await manager.checkPermission(USER1, CREATE_PERMISSION));
-
-      await manager.grantRoles(USER1, [DAOManagerCreateRole]);
-
-      assert.isTrue(await manager.checkPermission(USER1, CREATE_PERMISSION));
     });
   });
 
   describe("Add/Updated Veto Groups", () => {
     it("should add veto group", async () => {
-      await truffleAssert.reverts(
-        manager.addVetoGroup(daoMemberStorage.address, "Veto Member Storage", daoMemberStorage.address, {
-          from: USER1,
-        }),
-        "[QGDK-008006]-The sender is not allowed to perform the action, access denied."
-      );
+      await expect(
+        manager.connect(USER1).addVetoGroup(daoMemberStorage.address, "Veto Member Storage", daoMemberStorage.address)
+      ).to.be.revertedWith("PermissionManager: The sender is not allowed to perform the action, access denied.");
 
-      await truffleAssert.passes(
-        manager.addVetoGroup(daoMemberStorage.address, "Veto Member Storage", daoMemberStorage.address, {
-          from: OWNER,
-        }),
-        "passes"
-      );
+      await manager.addVetoGroup(daoMemberStorage.address, "Veto Member Storage", daoMemberStorage.address);
 
-      await truffleAssert.reverts(
-        manager.addVetoGroup(daoMemberStorage.address, "Veto Member Storage", daoMemberStorage.address, {
-          from: OWNER,
-        }),
-        "[QGDK-008004]-The veto group already exists."
-      );
+      await expect(
+        manager.addVetoGroup(daoMemberStorage.address, "Veto Member Storage", daoMemberStorage.address)
+      ).to.be.revertedWith("PermissionManager: The veto group already exists.");
 
-      await truffleAssert.passes(
-        manager.addVetoGroup(registry.address, "Veto Registry", ZERO_ADDR, {
-          from: OWNER,
-        }),
-        "passes"
-      );
+      await manager.addVetoGroup(daoMemberStorageResource, "Veto Member Storage", ZERO_ADDRESS);
 
-      const vetoGroup = await manager.getVetoGroupInfo(registry.address);
-      assert.equal(vetoGroup.target, registry.address);
-      assert.equal(vetoGroup.name, "Veto Registry");
-      assert.equal(vetoGroup.linkedMemberStorage, ZERO_ADDR);
+      const vetoGroup = await manager.getVetoGroupInfo(daoMemberStorageResource);
+      expect(vetoGroup.target).to.be.equal("DAO_MEMBER_STORAGE:DAO Token Holder");
+      expect(vetoGroup.name).to.be.equal("Veto Member Storage");
+      expect(vetoGroup.linkedMemberStorage).to.be.equal(ZERO_ADDRESS);
     });
 
     it("should add veto groups", async () => {
-      await truffleAssert.reverts(
-        manager.addVetoGroups(
-          [
-            {
-              target: daoMemberStorage.address,
-              name: "Veto Member Storage",
-              linkedMemberStorage: daoMemberStorage.address,
-            },
-            {
-              target: registry.address,
-              name: "Veto Registry",
-              linkedMemberStorage: ZERO_ADDR,
-            },
-          ],
+      await expect(
+        manager.connect(USER1).addVetoGroups([
           {
-            from: USER1,
-          }
-        ),
-        "[QGDK-008006]-The sender is not allowed to perform the action, access denied."
-      );
-
-      assert.isFalse(await manager.isVetoGroupExists(daoMemberStorage.address));
-
-      await truffleAssert.passes(
-        manager.addVetoGroups(
-          [
-            {
-              target: daoMemberStorage.address,
-              name: "Veto Member Storage",
-              linkedMemberStorage: daoMemberStorage.address,
-            },
-            {
-              target: registry.address,
-              name: "Veto Registry",
-              linkedMemberStorage: ZERO_ADDR,
-            },
-          ],
+            target: daoMemberStorageResource,
+            name: "Veto Member Storage",
+            linkedMemberStorage: daoMemberStorage.address,
+          },
           {
-            from: OWNER,
-          }
-        ),
-        "passes"
-      );
+            target: daoVotingResource,
+            name: "Veto Voting",
+            linkedMemberStorage: ZERO_ADDRESS,
+          },
+        ])
+      ).to.be.revertedWith("PermissionManager: The sender is not allowed to perform the action, access denied.");
 
-      assert.isTrue(await manager.isVetoGroupExists(daoMemberStorage.address));
+      expect(await manager.isVetoGroupExists(daoMemberStorageResource)).to.be.false;
+
+      await manager.addVetoGroups([
+        {
+          target: daoMemberStorageResource,
+          name: "Veto Member Storage",
+          linkedMemberStorage: daoMemberStorage.address,
+        },
+        {
+          target: daoVotingResource,
+          name: "Veto Voting",
+          linkedMemberStorage: ZERO_ADDRESS,
+        },
+      ]);
+
+      expect(await manager.isVetoGroupExists(daoMemberStorageResource)).to.be.true;
     });
 
     it("should link new Member Storage to veto group", async () => {
-      await truffleAssert.reverts(
-        manager.addVetoGroup(registry.address, "Veto Member Storage", daoMemberStorage.address, {
-          from: USER1,
-        }),
-        "[QGDK-008006]-The sender is not allowed to perform the action, access denied."
+      await expect(
+        manager.connect(USER1).addVetoGroup(daoMemberStorageResource, "Veto Member Storage", daoMemberStorage.address)
+      ).to.be.revertedWith("PermissionManager: The sender is not allowed to perform the action, access denied.");
+
+      await expect(manager.linkStorageToVetoGroup(daoVotingResource, daoMemberStorage.address)).to.be.revertedWith(
+        "PermissionManager: The veto group does not exists, impossible to link it with member storage."
       );
 
-      await truffleAssert.reverts(
-        manager.linkStorageToVetoGroup(daoVoting.address, daoMemberStorage.address, {
-          from: OWNER,
-        }),
-        "[QGDK-008003]-The veto group does not exists, impossible to link it with member storage."
-      );
+      expect(await manager.getExistingVetoGroupTargets()).to.be.empty;
 
-      assert.deepEqual(await manager.getExistingVetoGroupTargets(), []);
+      await manager.addVetoGroup(daoMemberStorageResource, "Veto Member Storage", daoMemberStorage.address);
 
-      await truffleAssert.passes(
-        manager.addVetoGroup(registry.address, "Veto Member Storage", daoMemberStorage.address, {
-          from: OWNER,
-        }),
-        "passes"
-      );
+      expect(await manager.getExistingVetoGroupTargets()).to.be.deep.equal([daoMemberStorageResource]);
 
-      assert.deepEqual(await manager.getExistingVetoGroupTargets(), [registry.address]);
+      const DAOMemberStorage = await ethers.getContractFactory("DAOMemberStorage");
+      const mockMemberStorage = await DAOMemberStorage.deploy();
 
-      const mockMemberStorage = await DAOMemberStorage.new();
+      await expect(
+        manager.connect(USER1).linkStorageToVetoGroup(daoMemberStorageResource, mockMemberStorage.address)
+      ).to.be.revertedWith("PermissionManager: The sender is not allowed to perform the action, access denied.");
 
-      await truffleAssert.reverts(
-        manager.linkStorageToVetoGroup(registry.address, mockMemberStorage.address, {
-          from: USER1,
-        }),
-        "[QGDK-008006]-The sender is not allowed to perform the action, access denied."
-      );
+      let info = await manager.getVetoGroupInfo(daoMemberStorageResource);
+      expect(info.linkedMemberStorage).to.be.equal(daoMemberStorage.address);
 
-      let info = await manager.getVetoGroupInfo(registry.address);
-      assert.equal(info.linkedMemberStorage, daoMemberStorage.address);
+      await manager.linkStorageToVetoGroup(daoMemberStorageResource, mockMemberStorage.address);
 
-      await truffleAssert.passes(
-        manager.linkStorageToVetoGroup(registry.address, mockMemberStorage.address, {
-          from: OWNER,
-        }),
-        "passes"
-      );
+      info = await manager.getVetoGroupInfo(daoMemberStorageResource);
+      expect(info.linkedMemberStorage).to.be.equal(mockMemberStorage.address);
 
-      info = await manager.getVetoGroupInfo(registry.address);
-      assert.equal(info.linkedMemberStorage, mockMemberStorage.address);
+      await manager.linkStorageToVetoGroup(daoMemberStorageResource, ZERO_ADDRESS);
 
-      await truffleAssert.passes(
-        manager.linkStorageToVetoGroup(registry.address, ZERO_ADDR, {
-          from: OWNER,
-        }),
-        "passes"
-      );
-
-      info = await manager.getVetoGroupInfo(registry.address);
-      assert.equal(info.linkedMemberStorage, ZERO_ADDR);
+      info = await manager.getVetoGroupInfo(daoMemberStorageResource);
+      expect(info.linkedMemberStorage).to.be.equal(ZERO_ADDRESS);
     });
   });
 
   describe("removeVetoGroup", () => {
     it("should remove veto group", async () => {
-      await truffleAssert.reverts(
-        manager.removeVetoGroup(daoMemberStorage.address, {
-          from: USER1,
-        }),
-        "[QGDK-008006]-The sender is not allowed to perform the action, access denied."
+      await expect(manager.connect(USER1).removeVetoGroup(daoMemberStorage.address)).to.be.revertedWith(
+        "PermissionManager: The sender is not allowed to perform the action, access denied."
       );
 
-      await truffleAssert.reverts(
-        manager.removeVetoGroup(daoMemberStorage.address, {
-          from: OWNER,
-        }),
-        "[QGDK-008002]-The veto group does not exists, impossible to remove it."
+      await expect(
+        manager.removeVetoGroup(daoMemberStorage.address),
+        "PermissionManager: The veto group does not exists, impossible to remove it."
       );
 
-      assert.deepEqual(await manager.getUserGroups(USER1), []);
+      expect(await manager.getUserGroups(USER1.address)).to.be.empty;
 
-      await truffleAssert.passes(
-        manager.addVetoGroup(daoMemberStorage.address, "Veto Member Storage", daoMemberStorage.address, {
-          from: OWNER,
-        }),
-        "passes"
-      );
-      await truffleAssert.passes(
-        manager.removeVetoGroup(daoMemberStorage.address, {
-          from: OWNER,
-        }),
-        "passes"
-      );
+      await manager.addVetoGroup(daoMemberStorage.address, "Veto Member Storage", daoMemberStorage.address);
+      await manager.removeVetoGroup(daoMemberStorage.address);
     });
 
     it("should remove veto group with no linked storage", async () => {
-      assert.deepEqual(await manager.getUserGroups(USER1), []);
-
-      await truffleAssert.passes(
-        manager.addVetoGroup(daoMemberStorage.address, "Veto Member Storage", ZERO_ADDR, {
-          from: OWNER,
-        }),
-        "passes"
-      );
-      await truffleAssert.passes(
-        manager.removeVetoGroup(daoMemberStorage.address, {
-          from: OWNER,
-        }),
-        "passes"
-      );
+      await manager.addVetoGroup(daoMemberStorage.address, "Veto Member Storage", ZERO_ADDRESS);
+      await manager.removeVetoGroup(daoMemberStorage.address);
     });
   });
 
   describe("configure functions", () => {
     it("initialConfiguration", async () => {
-      await truffleAssert.reverts(
-        manager.initialConfiguration(
-          registry.address,
-          daoVoting.address,
-          GENERAL_VOTING_NAME,
-          DefaultVotingParams.panelName,
-          {
-            from: USER1,
-          }
-        ),
-        "[QGDK-008006]-The sender is not allowed to perform the action, access denied."
+      await expect(
+        manager.connect(USER1).initialConfiguration(daoVoting.address, VOTING_NAME, DAO_RESERVED_NAME),
+        "PermissionManager: The sender is not allowed to perform the action, access denied."
       );
 
-      await truffleAssert.passes(
-        manager.initialConfiguration(
-          registry.address,
-          daoVoting.address,
-          GENERAL_VOTING_NAME,
-          DefaultVotingParams.panelName,
-          {
-            from: OWNER,
-          }
-        ),
-        "passes"
-      );
+      await manager.initialConfiguration(daoVoting.address, VOTING_NAME, DAO_RESERVED_NAME);
     });
 
     it("confVotingModule", async () => {
-      await truffleAssert.reverts(
-        manager.confVotingModule(
-          registry.address,
-          GENERAL_VOTING_NAME,
-          daoVoting.address,
-          DefaultVotingParams.panelName,
-          {
-            from: USER1,
-          }
-        ),
-        "[QGDK-008006]-The sender is not allowed to perform the action, access denied."
+      await expect(
+        manager.connect(USER1).confVotingModule(VOTING_NAME, daoVoting.address, DAO_RESERVED_NAME),
+        "PermissionManager: The sender is not allowed to perform the action, access denied."
       );
 
-      await truffleAssert.passes(
-        manager.confVotingModule(
-          registry.address,
-          GENERAL_VOTING_NAME,
-          daoVoting.address,
-          DefaultVotingParams.panelName,
-          {
-            from: OWNER,
-          }
-        ),
-        "passes"
-      );
+      await manager.confVotingModule(VOTING_NAME, daoVoting.address, DAO_RESERVED_NAME);
     });
 
     it("confMemberGroup", async () => {
-      await truffleAssert.reverts(
-        manager.confMemberGroup(registry.address, GENERAL_VOTING_NAME, DefaultVotingParams.panelName, {
-          from: USER1,
-        }),
-        "[QGDK-008006]-The sender is not allowed to perform the action, access denied."
+      await expect(manager.connect(USER1).confMemberGroup(VOTING_NAME, DAO_RESERVED_NAME)).to.be.revertedWith(
+        "PermissionManager: The sender is not allowed to perform the action, access denied."
       );
 
-      await truffleAssert.passes(
-        manager.confMemberGroup(registry.address, GENERAL_VOTING_NAME, DefaultVotingParams.panelName, {
-          from: OWNER,
-        }),
-        "passes"
-      );
+      await manager.confMemberGroup(VOTING_NAME, DAO_RESERVED_NAME);
     });
 
     it("confExpertsGroups", async () => {
-      await truffleAssert.reverts(
-        manager.confExpertsGroups(EXPERTS_VOTING_NAME, DefaultVotingParams.panelName, {
-          from: USER1,
-        }),
-        "[QGDK-008006]-The sender is not allowed to perform the action, access denied."
+      await expect(manager.connect(USER1).confExpertsGroups(VOTING_NAME, DAO_RESERVED_NAME)).to.be.revertedWith(
+        "PermissionManager: The sender is not allowed to perform the action, access denied."
       );
 
-      await truffleAssert.passes(
-        manager.confExpertsGroups(EXPERTS_VOTING_NAME, DefaultVotingParams.panelName, {
-          from: OWNER,
-        }),
-        "passes"
-      );
+      await manager.confExpertsGroups(VOTING_NAME, DAO_RESERVED_NAME);
     });
 
     it("confExternalModule", async () => {
-      const treasuryModule = await TreasuryMock.new();
-      const badModule = await BadExternalModule.new();
+      const TreasuryMock = await ethers.getContractFactory("TreasuryMock");
+      const treasuryModule = await TreasuryMock.deploy();
 
-      await registry.addContract("DAO Treasury", treasuryModule.address);
-      await registry.addContract("Bad Treasury", badModule.address);
-      await registry.addContract("Non exist", ETHEREUM_ADDRESS);
+      const BadExternalModule = await ethers.getContractFactory("BadExternalModule");
+      const badModule = await BadExternalModule.deploy();
 
-      await truffleAssert.reverts(
-        manager.confExternalModule(registry.address, "DAO Treasury", {
-          from: USER1,
-        }),
-        "[QGDK-008006]-The sender is not allowed to perform the action, access denied."
+      await expect(
+        manager.connect(USER1).confExternalModule(treasuryModule.address),
+        "PermissionManager: The sender is not allowed to perform the action, access denied."
       );
 
-      await manager.grantRoles(USER1, [DAOManagerIntegrationRole]);
+      await manager.grantRoles(USER1.address, [DAOManagerIntegrationRole]);
 
-      await truffleAssert.reverts(
-        manager.confExternalModule(registry.address, "DAO Treasury2", {
-          from: USER1,
-        }),
-        "[QGDK-008000]-The module not found in the DAO Registry."
+      await expect(
+        manager.connect(USER1).confExternalModule(badModule.address),
+        "PermissionManager: The target contract must follow integration documentation."
       );
 
-      await truffleAssert.reverts(
-        manager.confExternalModule(registry.address, "Bad Treasury", {
-          from: USER1,
-        }),
-        "[QGDK-008001]-The target contract must follow integration documentation."
+      await expect(
+        manager.connect(USER1).confExternalModule(ZERO_ADDRESS),
+        "PermissionManager: The target contract must follow integration documentation."
       );
 
-      await truffleAssert.reverts(
-        manager.confExternalModule(registry.address, "Non exist", {
-          from: USER1,
-        }),
-        "[QGDK-008001]-The target contract must follow integration documentation."
-      );
-
-      await truffleAssert.passes(
-        manager.confExternalModule(registry.address, "DAO Treasury", {
-          from: USER1,
-        }),
-        "passes"
-      );
+      await manager.connect(USER1).confExternalModule(treasuryModule.address);
     });
   });
 
   describe("getters", () => {
     describe("DAORegistry", () => {
       it("should correctly check access for hasPermission (Create)", async () => {
-        await manager.addPermissionsToRole(DAORegistryRole1, [DAORegistryCreate], true);
+        await manager.addPermissionsToRole(DAORegistryRole1, DAORegistryCreate, true);
 
-        await assert.isFalse(await manager.hasPermission(USER1, DAO_REGISTRY_RESOURCE, CREATE_PERMISSION));
+        expect(await manager.hasPermission(USER1.address, DAO_REGISTRY_RESOURCE, CREATE_PERMISSION)).to.be.false;
 
-        await manager.grantRoles(USER1, [DAORegistryRole1]);
+        await manager.grantRoles(USER1.address, [DAORegistryRole1]);
 
-        await assert.isTrue(await manager.hasPermission(USER1, DAO_REGISTRY_RESOURCE, CREATE_PERMISSION));
+        expect(await manager.hasPermission(USER1.address, DAO_REGISTRY_RESOURCE, CREATE_PERMISSION)).to.be.true;
       });
 
       it("should correctly check access for hasPermission (Update)", async () => {
-        await manager.addPermissionsToRole(DAORegistryRole1, [DAORegistryUpdate], true);
+        await manager.addPermissionsToRole(DAORegistryRole1, DAORegistryUpdate, true);
 
-        await assert.isFalse(await manager.hasPermission(USER1, DAO_REGISTRY_RESOURCE, UPDATE_PERMISSION));
+        expect(await manager.hasPermission(USER1.address, DAO_REGISTRY_RESOURCE, UPDATE_PERMISSION)).to.be.false;
 
-        await manager.grantRoles(USER1, [DAORegistryRole1]);
+        await manager.grantRoles(USER1.address, [DAORegistryRole1]);
 
-        await assert.isTrue(await manager.hasPermission(USER1, DAO_REGISTRY_RESOURCE, UPDATE_PERMISSION));
+        expect(await manager.hasPermission(USER1.address, DAO_REGISTRY_RESOURCE, UPDATE_PERMISSION)).to.be.true;
       });
 
       it("should correctly check access for hasePermission (Delete)", async () => {
-        await manager.addPermissionsToRole(DAORegistryRole1, [DAORegistryDelete], true);
+        await manager.addPermissionsToRole(DAORegistryRole1, DAORegistryDelete, true);
 
-        await assert.isFalse(await manager.hasPermission(USER1, DAO_REGISTRY_RESOURCE, DELETE_PERMISSION));
+        expect(await manager.hasPermission(USER1.address, DAO_REGISTRY_RESOURCE, DELETE_PERMISSION)).to.be.false;
 
-        await manager.grantRoles(USER1, [DAORegistryRole1]);
+        await manager.grantRoles(USER1.address, [DAORegistryRole1]);
 
-        await assert.isTrue(await manager.hasPermission(USER1, DAO_REGISTRY_RESOURCE, DELETE_PERMISSION));
+        expect(await manager.hasPermission(USER1.address, DAO_REGISTRY_RESOURCE, DELETE_PERMISSION)).to.be.true;
       });
     });
 
     it("getVetoMembersCount", async () => {
-      await manager.addVetoGroup(daoMemberStorage.address, "Veto Member Storage", ZERO_ADDR, {
-        from: OWNER,
-      });
+      await manager.addVetoGroup(daoMemberStorageResource, "Veto Member Storage", ZERO_ADDRESS);
 
-      assert.equal(await manager.getVetoMembersCount(daoMemberStorage.address), 0);
-      assert.deepEqual(await manager.getVetoGroupMembers(daoMemberStorage.address), []);
+      expect(await manager.getVetoMembersCount(daoMemberStorageResource)).to.be.equal(0);
+      expect(await manager.getVetoGroupMembers(daoMemberStorageResource)).to.be.deep.equal([]);
 
-      await daoMemberStorage.addMember(USER2, { from: OWNER });
-      await manager.linkStorageToVetoGroup(daoMemberStorage.address, daoMemberStorage.address, { from: OWNER });
+      await daoMemberStorage.addMember(USER2.address);
+      await manager.linkStorageToVetoGroup(daoMemberStorageResource, daoMemberStorage.address);
 
-      assert.deepEqual(await manager.getGroupRoles((await daoMemberStorage.getGroup())[0]), [
-        "VetoGroupRoleFor:DAO_MEMBER_STORAGE_RESOURCE",
+      expect(await manager.getGroupRoles((await daoMemberStorage.getGroup())[0])).to.be.deep.equal([
+        "DAOExpertRole:DAO Token Holder",
+        "VetoGroupRoleFor:DAO_MEMBER_STORAGE:DAO Token Holder",
       ]);
 
-      assert.equal(await manager.getVetoMembersCount(daoMemberStorage.address), 1);
-      assert.deepEqual(await manager.getVetoGroupMembers(daoMemberStorage.address), [USER2]);
+      expect(await manager.getVetoMembersCount(daoMemberStorageResource)).to.be.equal(1);
+      expect(await manager.getVetoGroupMembers(daoMemberStorageResource)).to.be.deep.equal([USER2.address]);
 
-      await daoMemberStorage.addMember(USER1, { from: OWNER });
+      await daoMemberStorage.addMember(USER1.address);
 
-      assert.equal(await manager.getVetoMembersCount(daoMemberStorage.address), 2);
-      assert.deepEqual(await manager.getVetoGroupMembers(daoMemberStorage.address), [USER2, USER1]);
-
-      await truffleAssert.reverts(
-        manager.getVetoMembersCount(ZERO_ADDR),
-        "[QGDK-008005]-The target contract must implement the IDAOResource interface."
-      );
+      expect(await manager.getVetoMembersCount(daoMemberStorageResource)).to.be.equal(2);
+      expect(await manager.getVetoGroupMembers(daoMemberStorageResource)).to.be.deep.equal([
+        USER2.address,
+        USER1.address,
+      ]);
     });
   });
 });

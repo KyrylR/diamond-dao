@@ -113,6 +113,24 @@ interface IDAOVault {
     function getTokenSupply(address tokenAddress_) external view returns (uint256);
 
     /**
+     * @notice Returns the balance of a given user for a given token in vault.
+     * @param userAddress_ The address of the user to get the balance for.
+     * @param tokenAddress_ The address of the token to get the balance for.
+     * @return The balance of the user for the token.
+     */
+    function getUserTokenBalance(
+        address userAddress_,
+        address tokenAddress_
+    ) external view returns (uint256);
+
+    /**
+     * @notice Returns the balance of a given token in vault.
+     * @param tokenAddress_ The address of the token to get the balance for.
+     * @return The balance of the token.
+     */
+    function getTokenBalance(address tokenAddress_) external view returns (uint256);
+
+    /**
      * @notice Returns the voting power of a given user.
      * @param userAddress_ The address of the user to get the voting power for.
      * @return The amount of voting power the user has in the DAO.

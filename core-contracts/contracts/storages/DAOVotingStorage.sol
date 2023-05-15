@@ -103,6 +103,13 @@ abstract contract DAOVotingStorage is IDAOVoting {
     }
 
     /**
+     * @dev Retrieves the address of the voting token.
+     */
+    function getVotingToken() external view returns (address) {
+        return getDAOVotingStorage().votingToken;
+    }
+
+    /**
      * @dev Retrieves the proposal with the specified ID.
      * @param proposalId_ The ID of the proposal to retrieve.
      * @return A DAOProposal struct representing the proposal.

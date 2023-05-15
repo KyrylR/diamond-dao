@@ -60,6 +60,7 @@ contract DAOVoting is DAOVotingStorage {
         IDAOVoting.InitialSituation memory conf_
     ) external override onlyCreatePermission {
         string memory situation_ = conf_.votingSituationName;
+
         VotingStorage storage _vs = getDAOVotingStorage();
 
         require(
@@ -103,7 +104,10 @@ contract DAOVoting is DAOVotingStorage {
     ) external override onlyDeletePermission {
         VotingStorage storage _vs = getDAOVotingStorage();
 
-        _vs.votingSituations.remove(situation_);
+        require(
+            _vs.votingSituations.remove(situation_),
+            "DAOVoting: The voting situation does not exist."
+        );
 
         _vs.daoParameterStorage.removeDAOParameters(
             [
@@ -118,6 +122,15 @@ contract DAOVoting is DAOVotingStorage {
                 getVotingKey(situation_, VOTING_MIN_AMOUNT)
             ].asArray()
         );
+    }
+
+    /**
+     * @dev Changes the voting token.
+     */
+    function changeVotingToken(address newVotingToken_) external onlyCreatePermission {
+        VotingStorage storage _vs = getDAOVotingStorage();
+
+        _vs.votingToken = newVotingToken_;
     }
 
     /**

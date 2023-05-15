@@ -39,7 +39,7 @@ abstract contract DiamondDAOStorage is IERC165, IDiamondLoupe {
 
         require(
             diamondOwner_ == address(0) || diamondOwner_ == msg.sender,
-            "LibDiamondDAO: not an owner"
+            "DiamondDAO: not an owner"
         );
         _;
     }

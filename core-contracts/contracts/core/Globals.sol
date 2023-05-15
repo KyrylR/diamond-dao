@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import "@openzeppelin/contracts/utils/Strings.sol";
-
 import "@dlsl/dev-modules/utils/Globals.sol";
 
 import "../interfaces/IDAOVoting.sol";
@@ -77,10 +75,6 @@ function getVetoGroup(string memory resource_) pure returns (string[] memory) {
     return [string.concat("VetoGroupFor:", resource_)].asArray();
 }
 
-function getDAOCreatorRole(string memory resource_) pure returns (string[] memory) {
-    return [string.concat("DAOCreatorRole:", resource_)].asArray();
-}
-
 function getDAOMemberRole(string memory panelName_) pure returns (string[] memory) {
     return [string.concat("DAOMemberRole:", panelName_)].asArray();
 }
@@ -95,21 +89,6 @@ function getVetoGroupRole(string memory resource_) pure returns (string[] memory
 
 function getDAOVotingRole(string memory panelName_) pure returns (string[] memory) {
     return [string.concat("DAOVotingRole:", panelName_)].asArray();
-}
-
-using Strings for uint256;
-
-/**
- * @dev Returns the resource name for the specified DAO module.
- * @param moduleType_ The type of the DAO module for which to get the resource name.
- * @param moduleProxy_ The proxy address of the DAO module for which to get the resource name.
- * @return The resource name for the specified DAO module.
- */
-function getDAOResource(
-    string memory moduleType_,
-    address moduleProxy_
-) pure returns (string memory) {
-    return string.concat(moduleType_, ":", uint256(uint160(moduleProxy_)).toHexString(20));
 }
 
 /**

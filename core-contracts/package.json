@@ -6,7 +6,6 @@
   "description": "Diamond DAO",
   "scripts": {
     "build": "npm install && npm run generate-types",
-    "install": "npx husky install",
     "compile": "npx hardhat compile",
     "coverage": "npx hardhat coverage --solcoverjs ./.solcover.ts",
     "clean": "npx hardhat clean",

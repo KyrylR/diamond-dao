@@ -1,14 +1,22 @@
 {
-  "name": "nft-lab",
-  "version": "1.0.0",
+  "name": "diamond-dao",
+  "version": "0.1.0",
   "license": "MIT",
-  "author": "Distributed Lab",
+  "author": "Kyryl R",
   "description": "",
   "scripts": {
-    "install": "npm --prefix ./core-contracts run build",
+    "install": "npm --prefix ./core-contracts run build && npm --prefix ./permissions-api run build-dep && npm --prefix ./dao-api run build-dep",
     "test": "npm --prefix ./core-contracts run test",
     "compile-contracts": "npm --prefix ./core-contracts run compile",
     "generate-types": "npm --prefix ./core-contracts run generate-types",
-    "deploy-contracts": "npm --prefix ./core-contracts run deploy-sepolia"
+    "deploy-contracts": "npm --prefix ./core-contracts run deploy-sepolia",
+    "lint-fix": "npm run lint-ts-fix && npm run lint-ql-fix && npm run lint-json-fix && npm run lint-yaml-fix",
+    "lint-json-fix": "prettier --write \"./[a-zA-Z0-9.]+(?!-lock).json\"",
+    "lint-yaml-fix": "prettier --write \"./**/*.yaml\"",
+    "lint-ql-fix": "prettier --write \"./**/*.graphql\"",
+    "lint-ts-fix": "prettier --write \"./**/*.ts\""
+  },
+  "dependencies": {
+    "prettier": "^2.8.8"
   }
 }

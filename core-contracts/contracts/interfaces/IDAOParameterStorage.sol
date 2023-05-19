@@ -8,6 +8,12 @@ import "../libs/ParameterSet.sol";
  * @dev Interface for a contract that stores and manages parameters for a DAO panel.
  */
 interface IDAOParameterStorage {
+    event ParameterAdded(Parameter parameter);
+
+    event ParameterChanged(Parameter parameter);
+
+    event ParameterRemoved(string parameterName);
+
     /**
      * @dev Sets a single DAO parameter, changes the existing parameter.
      * @param parameter_ The parameter to set or change

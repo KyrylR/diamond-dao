@@ -93,6 +93,8 @@ contract DAOVoting is DAOVotingStorage {
                 )
             ].asArray()
         );
+
+        emit VotingSituationCreated(situation_, votingValues_);
     }
 
     /**
@@ -122,6 +124,8 @@ contract DAOVoting is DAOVotingStorage {
                 getVotingKey(situation_, VOTING_MIN_AMOUNT)
             ].asArray()
         );
+
+        emit VotingSituationRemoved(situation_);
     }
 
     /**
@@ -131,6 +135,8 @@ contract DAOVoting is DAOVotingStorage {
         VotingStorage storage _vs = getDAOVotingStorage();
 
         _vs.votingToken = newVotingToken_;
+
+        emit VotingTokenChanged(newVotingToken_);
     }
 
     /**
@@ -266,6 +272,8 @@ contract DAOVoting is DAOVotingStorage {
         _vs.hasUserVetoed[proposalId_][msg.sender] = true;
 
         ++_vs.proposals[proposalId_].counters.vetoesCount;
+
+        emit UserVetoed(proposalId_, msg.sender);
     }
 
     /**
@@ -288,6 +296,8 @@ contract DAOVoting is DAOVotingStorage {
             (bool success_, ) = address(this).call(proposal.callData);
             require(success_, "DAOVoting: The proposal execution failed.");
         }
+
+        emit ProposalExecuted(proposalId_);
     }
 
     function _vote(uint256 proposalId_, VotingOption votingOption_) internal {
@@ -312,5 +322,7 @@ contract DAOVoting is DAOVotingStorage {
         } else {
             _vs.proposals[proposalId_].counters.votedAgainst += userVotingPower_;
         }
+
+        emit UserVoted(proposalId_, msg.sender, userVotingPower_, votingOption_);
     }
 }

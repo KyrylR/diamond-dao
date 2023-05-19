@@ -95,7 +95,24 @@ interface IDAOVoting {
         bool executed;
     }
 
+    event VotingSituationCreated(string indexed name, DAOVotingValues values);
+
+    event VotingSituationRemoved(string indexed name);
+
+    event VotingTokenChanged(address indexed votingToken);
+
     event ProposalCreated(uint256 indexed id, DAOProposal proposal);
+
+    event UserVoted(
+        uint256 indexed id,
+        address indexed voter,
+        uint256 votingPower,
+        VotingOption option
+    );
+
+    event UserVetoed(uint256 indexed id, address indexed voter);
+
+    event ProposalExecuted(uint256 indexed id);
 
     /**
      * @dev Initializes the DAO voting contract with the specified voting keys and values.

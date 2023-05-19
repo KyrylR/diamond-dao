@@ -91,6 +91,8 @@ contract PermissionManager is PermissionManagerStorage {
                 true
             );
         }
+
+        emit ExternalModuleIntegrated(moduleToIntegrate_);
     }
 
     /**
@@ -192,6 +194,8 @@ contract PermissionManager is PermissionManagerStorage {
         revokeGroupRoles(getVetoGroup(target_)[0], getVetoGroupRole(target_));
 
         pms_.vetoGroupTargets.remove(target_);
+
+        emit VetoGroupRemoved(target_);
     }
 
     /**
@@ -218,6 +222,8 @@ contract PermissionManager is PermissionManagerStorage {
         if (address(linkedMemberStorage_) != address(0)) {
             grantGroupRoles(linkedMemberStorage_.getGroup()[0], getVetoGroupRole(target_));
         }
+
+        emit LinkedStorageToVetoGroup(target_, address(linkedMemberStorage_));
     }
 
     function _confVotingModule(
@@ -312,6 +318,8 @@ contract PermissionManager is PermissionManagerStorage {
         }
 
         getPermissionManagerStorage().vetoGroupTargets.add(target_);
+
+        emit VetoGroupAdded(target_, name_, address(linkedMemberStorage_));
     }
 
     function _grantSpecialPermissions(string memory role_, string[] memory permissions_) private {

@@ -86,10 +86,14 @@ contract DAOParameterStorage is DAOParameterStorageS {
         if (_psStorage.parameters.contains(parameter_.name)) {
             _psStorage.parameters.change(parameter_);
 
+            emit ParameterChanged(parameter_);
+
             return;
         }
 
         _psStorage.parameters.add(parameter_);
+
+        emit ParameterAdded(parameter_);
     }
 
     function _removeDAOParameter(string calldata parameterName_) internal virtual {
@@ -100,5 +104,7 @@ contract DAOParameterStorage is DAOParameterStorageS {
         }
 
         _psStorage.parameters.remove(parameterName_);
+
+        emit ParameterRemoved(parameterName_);
     }
 }

@@ -96,7 +96,7 @@ contract DAOVault is DAOVaultStorage {
 
         _vs.permissionManager.addUserToGroups(msg.sender, getDAOGroup(DAO_RESERVED_NAME));
 
-        emit DepositedNFT(tokenAddress_, msg.sender, tokenId_);
+        emit NFTDeposited(tokenAddress_, msg.sender, tokenId_);
     }
 
     /**
@@ -149,7 +149,7 @@ contract DAOVault is DAOVaultStorage {
 
         _lockToken(sender_, tokenAddress_, amount_, timeToLock_);
 
-        emit Locked(tokenAddress_, sender_, amount_, timeToLock_);
+        emit TokenLocked(tokenAddress_, sender_, amount_, timeToLock_);
     }
 
     /**
@@ -187,7 +187,7 @@ contract DAOVault is DAOVaultStorage {
 
         IERC721(tokenAddress_).transferFrom(address(this), msg.sender, userTokenId_);
 
-        emit WithdrewNFT(tokenAddress_, msg.sender, tokenId_);
+        emit NFTWithdrew(tokenAddress_, msg.sender, tokenId_);
     }
 
     /**
@@ -201,7 +201,7 @@ contract DAOVault is DAOVaultStorage {
 
         _removeTokenFromUser(tokenAddress_);
 
-        emit RevokedSBTAuthorization(tokenAddress_, msg.sender);
+        emit SBTAuthorizationRevoked(tokenAddress_, msg.sender);
     }
 
     function _deposit(address tokenAddress_, uint256 amount_) internal {
@@ -216,7 +216,7 @@ contract DAOVault is DAOVaultStorage {
 
         _vs.lockedTokens[msg.sender][tokenAddress_].purgeTimeLocks();
 
-        emit Deposited(tokenAddress_, msg.sender, amount_);
+        emit TokenDeposited(tokenAddress_, msg.sender, amount_);
     }
 
     function _SBTAuthorization(address sender_, address tokenAddress_) internal {
@@ -259,7 +259,7 @@ contract DAOVault is DAOVaultStorage {
         uint256 userTokenId_ = _vs.userNFTs[sender_][tokenAddress_].at(0);
         _vs.lockedTokens[sender_][tokenAddress_].lockNFT(userTokenId_, timeToLock_);
 
-        emit LockedNFT(tokenAddress_, sender_, userTokenId_, timeToLock_);
+        emit NFTLocked(tokenAddress_, sender_, userTokenId_, timeToLock_);
     }
 
     function _withdraw(address tokenAddress_, uint256 amount_) internal {
@@ -289,7 +289,7 @@ contract DAOVault is DAOVaultStorage {
 
         tokenAddress_.sendFunds(msg.sender, amount_);
 
-        emit Withdrew(tokenAddress_, msg.sender, amount_);
+        emit TokenWithdrew(tokenAddress_, msg.sender, amount_);
     }
 
     function _removeTokenFromUser(address tokenAddress_) internal {

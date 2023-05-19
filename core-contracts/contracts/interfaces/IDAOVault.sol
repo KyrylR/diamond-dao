@@ -12,17 +12,17 @@ interface IDAOVault {
         uint256 unlockTime;
     }
 
-    event Deposited(address indexed tokenAddress, address indexed sender, uint256 amount);
-    event DepositedNFT(address indexed tokenAddress, address indexed sender, uint256 tokenId);
+    event TokenDeposited(address indexed tokenAddress, address indexed sender, uint256 amount);
+    event NFTDeposited(address indexed tokenAddress, address indexed sender, uint256 tokenId);
     event AuthorizedBySBT(address indexed tokenAddress, address indexed sender);
 
-    event Locked(
+    event TokenLocked(
         address indexed tokenAddress,
         address indexed sender,
         uint256 amount,
         uint256 unlockTime
     );
-    event LockedNFT(
+    event NFTLocked(
         address indexed tokenAddress,
         address indexed sender,
         uint256 tokenId,
@@ -34,9 +34,9 @@ interface IDAOVault {
         uint256 unlockTime
     );
 
-    event Withdrew(address indexed tokenAddress, address indexed sender, uint256 amount);
-    event WithdrewNFT(address indexed tokenAddress, address indexed sender, uint256 tokenId);
-    event RevokedSBTAuthorization(address indexed tokenAddress, address indexed sender);
+    event TokenWithdrew(address indexed tokenAddress, address indexed sender, uint256 amount);
+    event NFTWithdrew(address indexed tokenAddress, address indexed sender, uint256 tokenId);
+    event SBTAuthorizationRevoked(address indexed tokenAddress, address indexed sender);
 
     /**
      * @dev Deposits Native tokens to the vault.

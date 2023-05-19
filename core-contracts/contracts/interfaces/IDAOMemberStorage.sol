@@ -8,6 +8,10 @@ import "../libs/ParameterSet.sol";
  * @dev Interface for a contract that stores and manages members of a DAO panel.
  */
 interface IDAOMemberStorage {
+    event MemberAdded(address indexed member, string group);
+
+    event MemberRemoved(address indexed member, string group);
+
     /**
      * @dev Adds a single member to the DAO.
      * @param member_ The address of the member to add.

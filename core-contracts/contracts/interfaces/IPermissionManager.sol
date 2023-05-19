@@ -26,6 +26,14 @@ interface IPermissionManager is IRBAC {
         DAOMemberStorage linkedMemberStorage;
     }
 
+    event VetoGroupAdded(string target, string name, address linkedMemberStorage);
+
+    event VetoGroupRemoved(string target);
+
+    event LinkedStorageToVetoGroup(string target, address linkedMemberStorage);
+
+    event ExternalModuleIntegrated(address module);
+
     /**
      * @dev It basically calls confVotingModule, confMemberGroup and confExpertsGroups.
      * @param voting_ The main voting address.

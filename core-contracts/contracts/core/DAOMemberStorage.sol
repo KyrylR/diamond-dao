@@ -85,7 +85,10 @@ contract DAOMemberStorage is DAOMemberStorageS {
 
         _mss.members.add(member_);
 
-        _mss.permissionManager.addUserToGroups(member_, getDAOExpertGroup(_mss.targetPanel));
+        string[] memory _group = getDAOExpertGroup(_mss.targetPanel);
+        _mss.permissionManager.addUserToGroups(member_, _group);
+
+        emit MemberAdded(member_, _group[0]);
     }
 
     function _removeMember(address member_) internal {
@@ -93,6 +96,9 @@ contract DAOMemberStorage is DAOMemberStorageS {
 
         _mss.members.remove(member_);
 
-        _mss.permissionManager.removeUserFromGroups(member_, getDAOExpertGroup(_mss.targetPanel));
+        string[] memory _group = getDAOExpertGroup(_mss.targetPanel);
+        _mss.permissionManager.removeUserFromGroups(member_, _group);
+
+        emit MemberRemoved(member_, _group[0]);
     }
 }

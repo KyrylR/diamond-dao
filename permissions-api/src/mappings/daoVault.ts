@@ -1,4 +1,7 @@
-import { TokensDeposited, TokensWithdrew } from "../../generated/DAOVault/DAOVault";
+import {
+  TokensDeposited,
+  TokensWithdrew,
+} from "../../generated/DAOVault/DAOVault";
 
 import { getOrCreateUser } from "../entities/User";
 

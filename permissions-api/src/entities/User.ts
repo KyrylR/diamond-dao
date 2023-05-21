@@ -26,7 +26,10 @@ export function createUser(id: Bytes, arg: BigInt): User {
   }
 }
 
-export function getOrCreateUser(id: Bytes, optionalArg: BigInt = BigInt.zero()): User {
+export function getOrCreateUser(
+  id: Bytes,
+  optionalArg: BigInt = BigInt.zero()
+): User {
   if (entityExists(id)) {
     return changetype<User>(User.load(id));
   } else {

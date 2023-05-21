@@ -1,0 +1,36 @@
+type User @entity {
+    # user address
+    id: Bytes!
+    rolesCount: BigInt!
+    roles: [Role!]!
+}
+
+type Role @entity {
+    # name
+    id: String!
+    description: String!
+
+    resourcesCount: BigInt!
+    resources: [Resource!]!
+
+    usersCount: BigInt!
+    users: [User!]!
+}
+
+type Resource @entity {
+    # role name + '_' + resource name
+    id: String!
+    name: String!
+
+    allowsCount: BigInt!
+    allows: [String!]!
+
+    disallowsCount: BigInt!
+    disallows: [String!]!
+}
+
+type Global @entity {
+    id: String!
+    totalUsersCount: BigInt!
+}
+

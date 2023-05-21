@@ -1,6 +1,7 @@
 import { BigInt, Bytes } from "@graphprotocol/graph-ts";
 
 import { User } from "../../generated/schema";
+import { getOrCreateGlobal } from "./Global";
 
 export function getUser(id: Bytes, optionalArg: BigInt = BigInt.zero()): User {
   if (entityExists(id)) {
@@ -17,8 +18,12 @@ export function createUser(id: Bytes, arg: BigInt): User {
   if (!entityExists(id)) {
     entity = new User(id);
 
-    entity.balances = new Array<BigInt>();
-    entity.tokens = new Array<Bytes>();
+    entity.rolesCount = BigInt.zero();
+    entity.roles = new Array<string>();
+
+    const global = getOrCreateGlobal();
+    global.totalUsersCount = global.totalUsersCount.plus(BigInt.fromI32(1));
+    global.save();
 
     return entity;
   } else {

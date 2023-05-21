@@ -3,27 +3,30 @@ schema:
   file: ./schema.graphql
 dataSources:
   - kind: ethereum/contract
-    name:
+    name: PermissionManager
     network: devnet
     source:
-      address: ""
-      abi:
-      startBlock:
+      address: "0x648129bABEd8999C4Fe2f4DB5ff859A7eAE1B58B"
+      abi: PermissionManager
+      startBlock: 6344477
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
       language: wasm/assemblyscript
-      file:
+      file: ./src/mappings/PermissionManager.ts
       entities:
-        -
+        - User
+        - Role
+        - Resource
       abis:
-        - name:
-          file:
+        - name: PermissionManager
+          file: ../core-contracts/abi/PermissionManager.json
       eventHandlers:
-        - event:
-          handler:
-      blockHandlers:
-        - handler:
-      callHandlers:
-        - function:
-          handler:
+        - event: GrantedRoles(address,string[])
+          handler: onGrantedRoles
+        - event: RevokedRoles(address,string[])
+          handler: onRevokedRoles
+        - event: AddedPermissions(string,string,string[],bool)
+          handler: onAddedPermissions
+        - event: RemovedPermissions(string,string,string[],bool)
+          handler: onRemovedPermissions

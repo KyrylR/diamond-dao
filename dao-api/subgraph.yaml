@@ -3,27 +3,119 @@ schema:
   file: ./schema.graphql
 dataSources:
   - kind: ethereum/contract
-    name:
+    name: DAOVault
     network: devnet
     source:
-      address: ""
-      abi:
-      startBlock:
+      address: "0x648129bABEd8999C4Fe2f4DB5ff859A7eAE1B58B"
+      abi: DAOVault
+      startBlock: 6344477
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
       language: wasm/assemblyscript
-      file:
+      file: ./src/mappings/daoVault.ts
       entities:
-        -
+        - User
       abis:
-        - name:
-          file:
+        - name: DAOVault
+          file: ../core-contracts/abi/DAOVault.json
       eventHandlers:
-        - event:
-          handler:
-      blockHandlers:
-        - handler:
-      callHandlers:
-        - function:
-          handler:
+        - event: TokenDeposited(indexed address,indexed address,uint256)
+          handler: onTokenDeposited
+        - event: TokenWithdrew(indexed address,indexed address,uint256)
+          handler: onTokenWithdrew
+        - event: TokenLocked(indexed address,indexed address,uint256,uint256)
+          handler: onTokenLocked
+        - event: NFTDeposited(indexed address,indexed address,uint256)
+          handler: onNFTDeposited
+        - event: NFTWithdrew(indexed address,indexed address,uint256)
+          handler: onNFTWithdrew
+        - event: NFTLocked(indexed address,indexed address,uint256,uint256)
+          handler: onNFTLocked
+        - event: AuthenticationBySBT(indexed address,indexed address,uint256)
+          handler: onAuthenticationBySBT
+        - event: AuthorizedBySBT(indexed address,indexed address)
+          handler: onAuthorizedBySBT
+        - event: SBTAuthorizationRevoked(indexed address,indexed address)
+          handler: onSBTAuthorizationRevoked
+
+  - kind: ethereum/contract
+    name: DAOMemberStorage
+    network: devnet
+    source:
+      address: "0x648129bABEd8999C4Fe2f4DB5ff859A7eAE1B58B"
+      abi: DAOMemberStorage
+      startBlock: 6344477
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      file: ./src/mappings/daoMemberStorage.ts
+      entities:
+        - User
+      abis:
+        - name: DAOMemberStorage
+          file: ../core-contracts/abi/DAOMemberStorage.json
+      eventHandlers:
+        - event: MemberAdded(indexed address,string)
+          handler: onMemberAdded
+        - event: MemberRemoved(indexed address,string)
+          handler: onMemberRemoved
+
+  - kind: ethereum/contract
+    name: DAOParameterStorage
+    network: devnet
+    source:
+      address: "0x648129bABEd8999C4Fe2f4DB5ff859A7eAE1B58B"
+      abi: DAOParameterStorage
+      startBlock: 6344477
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      file: ./src/mappings/daoParameterStorage.ts
+      entities:
+        - User
+      abis:
+        - name: DAOParameterStorage
+          file: ../core-contracts/abi/DAOParameterStorage.json
+      eventHandlers:
+        - event: ParameterAdded((string,bytes,uint8))
+          handler: onParameterAdded
+        - event: ParameterChanged((string,bytes,uint8))
+          handler: onParameterChanged
+        - event: ParameterRemoved(string)
+          handler: onParameterRemoved
+
+  - kind: ethereum/contract
+    name: DAOVoting
+    network: devnet
+    source:
+      address: "0x648129bABEd8999C4Fe2f4DB5ff859A7eAE1B58B"
+      abi: DAOVoting
+      startBlock: 6344477
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      file: ./src/mappings/daoVoting.ts
+      entities:
+        - User
+      abis:
+        - name: DAOVoting
+          file: ../core-contracts/abi/DAOVoting.json
+      eventHandlers:
+        - event: ProposalCreated(indexed uint256,(uint256,string,string,string,bytes,string,(uint8,uint256,uint256,uint256,uint256,uint256,uint256,uint256),(uint256,uint256,uint256),bool))
+          handler: onProposalCreated
+        - event: ProposalExecuted(indexed uint256)
+          handler: onProposalExecuted
+        - event: UserVetoed(indexed uint256,indexed address)
+          handler: onUserVetoed
+        - event: UserVoted(indexed uint256,indexed address,uint256,uint8)
+          handler: onUserVoted
+        - event: VotingSituationCreated(indexed string,(uint256,uint256,uint256,uint256,uint256,uint256,uint256,string,uint256))
+          handler: onVotingSituationCreated
+        - event: VotingSituationRemoved(indexed string)
+          handler: onVotingSituationRemoved
+        - event: VotingTokenChanged(indexed address)
+          handler: onVotingTokenChanged

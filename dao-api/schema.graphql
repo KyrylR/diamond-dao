@@ -1,0 +1,87 @@
+type Vote @entity {
+  # id: User Id + Proposal Id
+  id: String!
+  votingOption: VotingOption!
+  votingPower: BigInt!
+}
+
+type VotingSituation @entity {
+  # id: Name of the VotingSituation + VotingData Id
+  id: String!
+  votingData: VotingData!
+  votingPeriod: BigInt!
+  vetoPeriod: BigInt!
+  proposalExecutionPeriod: BigInt!
+  requiredQuorum: BigInt!
+  requiredMajority: BigInt!
+  requiredVetoQuorum: BigInt!
+  votingType: BigInt!
+  votingTarget: String!
+  votingMinAmount: BigInt!
+  isPresent: Boolean!
+}
+
+type VotingData @entity {
+  id: Bytes!
+  votingToken: Bytes!
+  situations: [VotingSituation!] @derivedFrom(field: "votingData")
+}
+
+type Proposal @entity {
+  # id: Proposal Id + Voting Contract Address
+  id: String!
+  remark: String!
+  situation: VotingSituation!
+  callData: Bytes!
+  target: String!
+  proposer: Bytes!
+  executed: Boolean!
+  users: [User!]! @derivedFrom(field: "proposals")
+  experts: [Expert!]! @derivedFrom(field: "proposals")
+}
+
+type User @entity {
+  id: Bytes!
+  name: String!
+  proposals: [Proposal!]!
+  votes: [Vote!]!
+  tokens: [Bytes!]!
+  balances: [BigInt!]!
+  nfts: [BigInt!]!
+  lockedTokens: [BigInt!]!
+  isSBTAuthorized: Boolean!
+}
+
+type Expert @entity {
+  id: Bytes!
+  group: String!
+  startBlocks: [BigInt!]!
+  startTimestamps: [BigInt!]!
+  endBlocks: [BigInt!]!
+  endTimestamps: [BigInt!]!
+  proposals: [Proposal!]!
+}
+
+type Parameter @entity {
+  # id: Name of the Parameter
+  id: String!
+  value: Bytes!
+  solidityType: SolidityType!
+  changeBlocks: [BigInt!]!
+  isPresent: Boolean!
+}
+
+enum SolidityType {
+  NONE
+  ADDRESS
+  UINT
+  STRING
+  BYTES
+  BOOL
+}
+
+enum VotingOption {
+  NONE
+  FOR
+  AGAINST
+}

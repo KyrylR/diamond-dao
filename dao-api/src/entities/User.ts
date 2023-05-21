@@ -17,8 +17,12 @@ export function createUser(id: Bytes, arg: BigInt): User {
   if (!entityExists(id)) {
     entity = new User(id);
 
+    entity.name = "";
+    entity.proposals = new Array<string>();
+    entity.votes = new Array<string>();
     entity.balances = new Array<BigInt>();
     entity.tokens = new Array<Bytes>();
+    entity.lockedTokens = new Array<BigInt>();
 
     return entity;
   } else {
@@ -26,7 +30,10 @@ export function createUser(id: Bytes, arg: BigInt): User {
   }
 }
 
-export function getOrCreateUser(id: Bytes, optionalArg: BigInt = BigInt.zero()): User {
+export function getOrCreateUser(
+  id: Bytes,
+  optionalArg: BigInt = BigInt.zero()
+): User {
   if (entityExists(id)) {
     return changetype<User>(User.load(id));
   } else {

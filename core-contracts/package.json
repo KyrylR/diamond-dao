@@ -5,7 +5,7 @@
   "author": "Kyryl R",
   "description": "Diamond DAO",
   "scripts": {
-    "build": "npm install && npm run generate-types",
+    "build": "npm install && npm run generate-types && npx hardhat export-abi",
     "compile": "npx hardhat compile",
     "coverage": "npx hardhat coverage --solcoverjs ./.solcover.ts",
     "clean": "npx hardhat clean",

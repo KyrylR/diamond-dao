@@ -103,6 +103,10 @@ describe("DAOMemberStorage", () => {
 
       await daoMemberStorage.connect(USER1).addMember(USER1.address);
 
+      await expect(daoMemberStorage.connect(USER1).addMember(USER1.address)).to.be.revertedWith(
+        "DAOMemberStorage: member already added."
+      );
+
       expect(await daoMemberStorage.getMembers()).to.be.deep.equal([USER1.address]);
       expect(await daoMemberStorage.getMembersCount()).to.be.equal(1);
 
@@ -149,6 +153,10 @@ describe("DAOMemberStorage", () => {
 
       await daoMemberStorage.connect(USER1).removeMember(USER2.address);
       expect(await daoMemberStorage.isMember(USER2.address)).to.be.false;
+
+      await expect(daoMemberStorage.connect(USER1).removeMember(USER2.address)).to.be.revertedWith(
+        "DAOMemberStorage: member not found."
+      );
 
       expect(await daoMemberStorage.getMembers()).to.be.deep.equal([USER1.address, USER3.address]);
       expect(await manager.getUserGroups(USER2.address)).to.be.deep.equal([]);

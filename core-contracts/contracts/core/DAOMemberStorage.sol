@@ -83,7 +83,7 @@ contract DAOMemberStorage is DAOMemberStorageS {
     function _addMember(address member_) internal {
         MSStorage storage _mss = getMSStorage();
 
-        _mss.members.add(member_);
+        require(_mss.members.add(member_), "DAOMemberStorage: member already added.");
 
         string[] memory _group = getDAOExpertGroup(_mss.targetPanel);
         _mss.permissionManager.addUserToGroups(member_, _group);
@@ -94,7 +94,7 @@ contract DAOMemberStorage is DAOMemberStorageS {
     function _removeMember(address member_) internal {
         MSStorage storage _mss = getMSStorage();
 
-        _mss.members.remove(member_);
+        require(_mss.members.remove(member_), "DAOMemberStorage: member not found.");
 
         string[] memory _group = getDAOExpertGroup(_mss.targetPanel);
         _mss.permissionManager.removeUserFromGroups(member_, _group);

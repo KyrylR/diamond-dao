@@ -129,9 +129,9 @@ contract DAOVoting is DAOVotingStorage {
     }
 
     /**
-     * @dev Changes the voting token.
+     * @inheritdoc IDAOVoting
      */
-    function changeVotingToken(address newVotingToken_) external onlyCreatePermission {
+    function changeVotingToken(address newVotingToken_) external override onlyCreatePermission {
         VotingStorage storage _vs = getDAOVotingStorage();
 
         _vs.votingToken = newVotingToken_;
@@ -148,7 +148,7 @@ contract DAOVoting is DAOVotingStorage {
         string calldata situation_,
         string calldata remark_,
         bytes calldata callData_
-    ) external onlyCreateVotingPermission returns (uint256) {
+    ) external override onlyCreateVotingPermission returns (uint256) {
         VotingStorage storage _vs = getDAOVotingStorage();
 
         require(
@@ -238,24 +238,21 @@ contract DAOVoting is DAOVotingStorage {
     }
 
     /**
-     * @dev Casts a vote in favor of the specified proposal.
-     * @param proposalId_ The ID of the proposal to vote for.
+     * @inheritdoc IDAOVoting
      */
     function voteFor(uint256 proposalId_) external override onlyVotePermission(proposalId_) {
         _vote(proposalId_, VotingOption.FOR);
     }
 
     /**
-     * @dev Casts a vote against the specified proposal.
-     * @param proposalId_ The ID of the proposal to vote against.
+     * @inheritdoc IDAOVoting
      */
     function voteAgainst(uint256 proposalId_) external override onlyVotePermission(proposalId_) {
         _vote(proposalId_, VotingOption.AGAINST);
     }
 
     /**
-     * @dev Vetoes the specified proposal.
-     * @param proposalId_ The ID of the proposal to veto.
+     * @inheritdoc IDAOVoting
      */
     function veto(uint256 proposalId_) external override onlyVetoPermission(proposalId_) {
         VotingStorage storage _vs = getDAOVotingStorage();
@@ -277,8 +274,7 @@ contract DAOVoting is DAOVotingStorage {
     }
 
     /**
-     * @dev Executes the specified proposal.
-     * @param proposalId_ The ID of the proposal to execute.
+     * @inheritdoc IDAOVoting
      */
     function executeProposal(uint256 proposalId_) external override {
         VotingStorage storage _vs = getDAOVotingStorage();

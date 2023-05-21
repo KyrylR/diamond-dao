@@ -126,10 +126,31 @@ interface IDAOVoting {
     function removeVotingSituation(string memory situation_) external;
 
     /**
+     * @dev Returns the proposal stats for a given proposal.
+     */
+    function getProposalVotingStats(
+        uint256 proposalId_
+    ) external view returns (VotingStats memory);
+
+    /**
      * @dev Returns an array of all voting situations in the DAO.
      * @return An array of all voting situations in the DAO.
      */
     function getVotingSituations() external view returns (string[] memory);
+
+    /**
+     * @dev Returns the voting values for a given voting situation.
+     * @param situation_ The name of the voting situation.
+     * @return The voting values for the given voting situation.
+     */
+    function getVotingSituationInfo(
+        string calldata situation_
+    ) external view returns (DAOVotingValues memory);
+
+    /**
+     * @dev Changes the voting token.
+     */
+    function changeVotingToken(address newVotingToken_) external;
 
     /**
      * @dev Creates a new proposal for the DAO.
@@ -167,6 +188,11 @@ interface IDAOVoting {
      * @param proposalId_ The ID of the proposal to execute.
      */
     function executeProposal(uint256 proposalId_) external;
+
+    /**
+     * @dev Retrieves the address of the voting token.
+     */
+    function getVotingToken() external view returns (address);
 
     /**
      * @dev Retrieves the proposal with the specified ID.

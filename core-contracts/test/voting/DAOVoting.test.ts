@@ -24,6 +24,7 @@ import {
   DefaultSBTParams,
   DAO_PERMISSION_MANAGER_NAME,
   DAO_RESERVED_NAME,
+  SBT_NAME,
 } from "../utils/constants";
 
 import { toBN } from "@/scripts/utils/utils";
@@ -113,7 +114,7 @@ describe("DAOVoting", () => {
 
     const SBT = await ethers.getContractFactory("SBT");
     sbt = await SBT.deploy();
-    await sbt.__SBT_init(DefaultSBTParams, ERC20_NAME);
+    await sbt.__SBT_init(DefaultSBTParams, SBT_NAME);
 
     const votingFaucetCuts = buildFaucetCutsFromFuncSigs(DAOVotingFuncSigs, daoVoting.address, 0);
     const memberStorageFaucetCuts = buildFaucetCutsFromFuncSigs(DAOMemberStorageFuncSigs, memberStorage.address, 0);
@@ -152,7 +153,7 @@ describe("DAOVoting", () => {
 
     defaultVotingSituation = "Membership voting";
     await daoVoting.createDAOVotingSituation({
-      votingSituationName: "Membership voting",
+      votingSituationName: defaultVotingSituation,
       votingValues: {
         votingPeriod: 60,
         vetoPeriod: 60,

@@ -103,27 +103,21 @@ abstract contract DAOVotingStorage is IDAOVoting {
     }
 
     /**
-     * @dev Retrieves the address of the voting token.
+     * @inheritdoc IDAOVoting
      */
     function getVotingToken() external view returns (address) {
         return getDAOVotingStorage().votingToken;
     }
 
     /**
-     * @dev Retrieves the proposal with the specified ID.
-     * @param proposalId_ The ID of the proposal to retrieve.
-     * @return A DAOProposal struct representing the proposal.
+     * @inheritdoc IDAOVoting
      */
     function getProposal(uint256 proposalId_) external view override returns (DAOProposal memory) {
         return getDAOVotingStorage().proposals[proposalId_];
     }
 
     /**
-     * @dev Retrieves a list of proposals.
-     * @param offset_ The offset from which to start retrieving proposals.
-     * If set to 0, the most recent proposal will be retrieved.
-     * @param limit_ The maximum number of proposals to retrieve.
-     * @return A list of DAOProposal structs representing the proposals.
+     * @inheritdoc IDAOVoting
      */
     function getProposalList(
         uint256 offset_,
@@ -152,9 +146,7 @@ abstract contract DAOVotingStorage is IDAOVoting {
     }
 
     /**
-     * @dev Retrieves the status of the proposal with the specified ID.
-     * @param proposalId_ The ID of the proposal to retrieve the status for.
-     * @return A ProposalStatus enum value indicating the current status of the proposal.
+     * @inheritdoc IDAOVoting
      */
     function getProposalStatus(uint256 proposalId_) public view returns (ProposalStatus) {
         DAOProposal storage _proposal = getDAOVotingStorage().proposals[proposalId_];
@@ -197,9 +189,12 @@ abstract contract DAOVotingStorage is IDAOVoting {
         return ProposalStatus.PASSED;
     }
 
+    /**
+     * @inheritdoc IDAOVoting
+     */
     function getProposalVotingStats(
         uint256 proposalId_
-    ) external view returns (VotingStats memory) {
+    ) external view override returns (VotingStats memory) {
         DAOProposal storage _proposal = getDAOVotingStorage().proposals[proposalId_];
 
         return
@@ -214,21 +209,18 @@ abstract contract DAOVotingStorage is IDAOVoting {
     }
 
     /**
-     * @dev Returns an array of all voting situations in the DAO.
-     * @return An array of all voting situations in the DAO.
+     * @inheritdoc IDAOVoting
      */
     function getVotingSituations() external view override returns (string[] memory) {
         return getDAOVotingStorage().votingSituations.values();
     }
 
     /**
-     * @dev Returns the voting values for a given voting situation.
-     * @param situation_ The name of the voting situation.
-     * @return The voting values for the given voting situation.
+     * @inheritdoc IDAOVoting
      */
     function getVotingSituationInfo(
         string calldata situation_
-    ) external view returns (DAOVotingValues memory) {
+    ) external view override returns (DAOVotingValues memory) {
         DAOParameterStorage _pms = getDAOVotingStorage().daoParameterStorage;
 
         return

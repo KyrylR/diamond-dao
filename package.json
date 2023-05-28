@@ -7,6 +7,7 @@
   "scripts": {
     "install": "npm --prefix ./core-contracts run build && npm --prefix ./permissions-api run build-dep && npm --prefix ./dao-api run build-dep",
     "test": "npm --prefix ./core-contracts run test",
+    "coverage": "npm --prefix ./core-contracts run coverage",
     "compile-contracts": "npm --prefix ./core-contracts run compile",
     "generate-types": "npm --prefix ./core-contracts run generate-types",
     "deploy-contracts": "npm --prefix ./core-contracts run deploy-sepolia",

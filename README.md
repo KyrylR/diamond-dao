@@ -134,7 +134,6 @@ API, який я розробив, відіграє ключову роль у �
 | 5     |  DAOMemberStorage   | 0xBB15aCB501Bc072EB27600e0051Daaf46A3B3315 |
 
 
-Only for authorized users!
 =================================================================================
 
 Build completed: QmdHT5NE5fFaceAzydrW7MZdfTJFznrFkDNwXy4u9sn7oS

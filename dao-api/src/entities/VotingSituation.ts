@@ -32,6 +32,7 @@ export function createVotingSituation(
     entity.votingType = BigInt.fromI32(0);
     entity.votingTarget = "";
     entity.votingMinAmount = BigInt.fromI32(0);
+    entity.isPresent = false;
 
     return entity;
   } else {

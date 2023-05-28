@@ -20,9 +20,11 @@ export function createUser(id: Bytes, arg: BigInt): User {
     entity.name = "";
     entity.proposals = new Array<string>();
     entity.votes = new Array<string>();
-    entity.balances = new Array<BigInt>();
     entity.tokens = new Array<Bytes>();
+    entity.balances = new Array<BigInt>();
+    entity.nfts = new Array<BigInt>();
     entity.lockedTokens = new Array<BigInt>();
+    entity.isSBTAuthorized = false;
 
     return entity;
   } else {

@@ -1,4 +1,4 @@
-import { BigInt, Bytes, store } from "@graphprotocol/graph-ts";
+import { Bytes, store } from "@graphprotocol/graph-ts";
 
 import { extendArray, reduceArray } from "../helpers/ArrayHelper";
 import { Role } from "../../generated/schema";
@@ -6,7 +6,7 @@ import {
   AddedPermissions,
   GrantedRoles,
   RemovedPermissions,
-  RevokedRoles
+  RevokedRoles,
 } from "../../generated/PermissionManager/PermissionManager";
 import { getOrCreateUser } from "../entities/User";
 import { getOrCreateRole } from "../entities/Role";
@@ -14,6 +14,7 @@ import { getOrCreateResource } from "../entities/Resources";
 
 export function onGrantedRoles(event: GrantedRoles): void {
   const params = event.params;
+
   let user = getOrCreateUser(params.to);
 
   user.roles = extendArray<string>(user.roles, params.rolesToGrant);
@@ -22,18 +23,16 @@ export function onGrantedRoles(event: GrantedRoles): void {
     let role = getOrCreateRole(params.rolesToGrant[i]);
 
     role.users = extendArray<Bytes>(role.users, [user.id]);
-    role.usersCount = BigInt.fromU64(role.users.length);
 
     role.save();
   }
-
-  user.rolesCount = BigInt.fromU64(user.roles.length);
 
   user.save();
 }
 
 export function onRevokedRoles(event: RevokedRoles): void {
   const params = event.params;
+
   let user = getOrCreateUser(params.from);
 
   user.roles = reduceArray<string>(user.roles, params.rolesToRevoke);
@@ -42,69 +41,63 @@ export function onRevokedRoles(event: RevokedRoles): void {
     let role = getOrCreateRole(params.rolesToRevoke[i]);
 
     role.users = reduceArray<Bytes>(role.users, [user.id]);
-    role.usersCount = BigInt.fromU64(role.users.length);
 
-    handleRole(role);
+    if (role.resources.length == 0 && role.users.length == 0) {
+      store.remove("Role", role.id);
+    } else {
+      role.save();
+    }
   }
-
-  user.rolesCount = BigInt.fromU64(user.roles.length);
 
   user.save();
 }
 
 export function onAddedPermissions(event: AddedPermissions): void {
   const params = event.params;
+
   let resource = getOrCreateResource(params.role, params.resource);
+
   let role = getOrCreateRole(params.role);
 
   role.resources = extendArray<string>(role.resources, [resource.id]);
-  role.resourcesCount = BigInt.fromU64(role.resourcesCount.length);
+
+  role.save();
 
   for (let i = 0; i < params.permissionsToAdd.length; i++) {
     if (params.allowed) {
-      resource.allows = extendArray<string>(resource.allows, [params.permissionsToAdd[i]]);
-      resource.allowsCount = BigInt.fromU64(resource.allows.length);
+      resource.allowedPermissions = extendArray<string>(
+        resource.allowedPermissions,
+        [params.permissionsToAdd[i]]
+      );
     } else {
-      resource.disallows = extendArray<string>(resource.disallows, [params.permissionsToAdd[i]]);
-      resource.disallowsCount = BigInt.fromU64(resource.disallows.length);
+      resource.disallowedPermission = extendArray<string>(
+        resource.disallowedPermission,
+        [params.permissionsToAdd[i]]
+      );
     }
   }
 
-  role.save();
   resource.save();
 }
 
 export function onRemovedPermissions(event: RemovedPermissions): void {
   const params = event.params;
+
   let resource = getOrCreateResource(params.role, params.resource);
-  let role = getOrCreateRole(params.role);
 
   for (let i = 0; i < params.permissionsToRemove.length; i++) {
     if (params.allowed) {
-      resource.allows = reduceArray<string>(resource.allows, [params.permissionsToRemove[i]]);
-      resource.allowsCount = BigInt.fromU64(resource.allows.length);
+      resource.allowedPermissions = reduceArray<string>(
+        resource.allowedPermissions,
+        [params.permissionsToRemove[i]]
+      );
     } else {
-      resource.disallows = reduceArray<string>(resource.disallows, [params.permissionsToRemove[i]]);
-      resource.disallowsCount = BigInt.fromU64(resource.disallows.length);
+      resource.disallowedPermission = reduceArray<string>(
+        resource.disallowedPermission,
+        [params.permissionsToRemove[i]]
+      );
     }
   }
 
-  if (resource.allowsCount.equals(BigInt.zero()) && resource.disallowsCount.equals(BigInt.zero())) {
-    role.resources = reduceArray<string>(role.resources, [resource.id]);
-    role.resourcesCount = BigInt.fromU64(role.resources.length);
-
-    handleRole(role);
-
-    store.remove("Resource", resource.id);
-  } else {
-    resource.save();
-  }
-}
-
-function handleRole(role: Role): void {
-  if (role.resources.length == 0 && role.users.length == 0) {
-    store.remove("Role", role.id);
-  } else {
-    role.save();
-  }
+  resource.save();
 }

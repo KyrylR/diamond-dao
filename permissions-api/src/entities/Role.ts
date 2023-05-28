@@ -18,10 +18,8 @@ export function createRole(id: string, arg: BigInt): Role {
     entity = new Role(id);
 
     entity.description = "";
-    entity.resourcesCount = BigInt.zero();
-    entity.usersCount = BigInt.zero();
-    entity.resources = new Array<string>();
     entity.users = new Array<Bytes>();
+    entity.resources = new Array<string>();
 
     return entity;
   } else {

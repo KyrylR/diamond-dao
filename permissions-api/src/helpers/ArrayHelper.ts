@@ -1,3 +1,5 @@
+// Helper functions for arrays from: https://github.com/dl-solidity-library/graph-modules/blob/master/modules/arrays/array-helper.ts
+
 export function extendArray<T>(array: Array<T>, elements: Array<T>): Array<T> {
   for (let i = 0; i < elements.length; i++) {
     if (!array.includes(elements[i])) {

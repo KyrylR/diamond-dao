@@ -1,36 +1,21 @@
 type User @entity {
-    # user address
-    id: Bytes!
-    rolesCount: BigInt!
-    roles: [Role!]!
+  # User address
+  id: Bytes!
+  roles: [Role!]!
 }
 
 type Role @entity {
-    # name
-    id: String!
-    description: String!
-
-    resourcesCount: BigInt!
-    resources: [Resource!]!
-
-    usersCount: BigInt!
-    users: [User!]!
+  # Role name
+  id: ID!
+  description: String!
+  resources: [Resource!]!
+  users: [User!]!
 }
 
 type Resource @entity {
-    # role name + '_' + resource name
-    id: String!
-    name: String!
-
-    allowsCount: BigInt!
-    allows: [String!]!
-
-    disallowsCount: BigInt!
-    disallows: [String!]!
+  # Role Id + Resource Name
+  id: ID!
+  name: String!
+  allowedPermissions: [String!]!
+  disallowedPermission: [String!]!
 }
-
-type Global @entity {
-    id: String!
-    totalUsersCount: BigInt!
-}
-

@@ -1,0 +1,37 @@
+┌─────────┬──────────┬──────────────────────────────────────────────┐
+│ (index) │ Contract │                   Address                    │
+├─────────┼──────────┼──────────────────────────────────────────────┤
+│    0    │  'SBT'   │ '0x377DF3D07e4eed44959840fF43ee857F146591C5' │
+│    1    │ 'ERC20'  │ '0x9FC007e85e0dbC2B0Ae5Df5c8c370F4A614dA2b7' │
+│    2    │ 'ERC721' │ '0xaCFd432348e0fee95F0Ac8E9D71eee7c644c46a5' │
+└─────────┴──────────┴──────────────────────────────────────────────┘
+
+┌─────────┬───────────────────────┬──────────────────────────────────────────────┐
+│ (index) │       Contract        │                   Address                    │
+├─────────┼───────────────────────┼──────────────────────────────────────────────┤
+│    0    │     'DiamondDAO'      │ '0x4265F57803Fe21c34B86fe5E73A6AfFBc977bc24' │
+│    1    │  'PermissionManager'  │ '0x330f8Df43A63A0e77C3Dd4b4cbcb75081996E46D' │
+│    2    │      'DAOVault'       │ '0xbC925e544Ab9245566B42fBD5Cf001BF59648B74' │
+│    3    │      'DAOVoting'      │ '0x919E4b70DCfEA57e042CC2B4d0f30C3E6437C8Cf' │
+│    4    │ 'DAOParameterStorage' │ '0x8fa90382A8016EF782C2a52638ed21cAcb9066f5' │
+│    5    │  'DAOMemberStorage'   │ '0xBB15aCB501Bc072EB27600e0051Daaf46A3B3315' │
+└─────────┴───────────────────────┴──────────────────────────────────────────────┘
+
+
+=================================================================================
+
+Build completed: QmdHT5NE5fFaceAzydrW7MZdfTJFznrFkDNwXy4u9sn7oS
+
+Deployed to http://13.41.72.7:8000/subgraphs/name/dao-api/graphql
+
+Subgraph endpoints:
+Queries (HTTP):     http://13.41.72.7:8000/subgraphs/name/dao-api
+
+=================================================================================
+
+Build completed: QmXtHY6CH6Gu3DE7Gs6L66SqJM8DmZqax4z9K2WmEucm79
+
+Deployed to http://13.41.72.7:8000/subgraphs/name/permission-api/graphql
+
+Subgraph endpoints:
+Queries (HTTP):     http://13.41.72.7:8000/subgraphs/name/permission-api

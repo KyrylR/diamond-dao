@@ -1,5 +1,3 @@
-import { BigInt } from "@graphprotocol/graph-ts";
-
 import { Resource } from "../../generated/schema";
 
 export function getResource(id: string): Resource {

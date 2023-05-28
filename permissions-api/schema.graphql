@@ -7,7 +7,6 @@ type User @entity {
 type Role @entity {
   # Role name
   id: ID!
-  description: String!
   resources: [Resource!]!
   users: [User!]!
 }

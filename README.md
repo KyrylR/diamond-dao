@@ -187,19 +187,15 @@ Request example:
     id
     resources {
       id
-      allows
-      disallows
+      allowedPermissions
+      disallowedPermission
     }
   }
   users {
     id
-    rolesCount
     roles {
       id
     }
-  }
-  globals {
-    totalUsersCount
   }
   _meta {
     hasIndexingErrors

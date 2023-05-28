@@ -18,10 +18,8 @@ export function createResource(id: string, resource: string): Resource {
     entity = new Resource(id);
 
     entity.name = resource;
-    entity.allowsCount = BigInt.zero();
-    entity.disallowsCount = BigInt.zero();
-    entity.allows = new Array<string>();
-    entity.disallows = new Array<string>();
+    entity.allowedPermissions = new Array<string>();
+    entity.disallowedPermission = new Array<string>();
 
     return entity;
   } else {
@@ -29,10 +27,7 @@ export function createResource(id: string, resource: string): Resource {
   }
 }
 
-export function getOrCreateResource(
-  role: string,
-  resource: string
-): Resource {
+export function getOrCreateResource(role: string, resource: string): Resource {
   const id = role + "-" + resource;
 
   if (entityExists(id)) {

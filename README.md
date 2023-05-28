@@ -71,56 +71,6 @@ API, який я розробив, відіграє ключову роль у �
 
 Таким чином, інтеграція протоколу The Graph в розробку ДАО є перспективним напрямком для підвищення їх масштабованості, гнучкості та безпеки. Вона забезпечує більш ефективний спосіб управління та взаємодії з даними організації, тим самим покращуючи загальний користувацький досвід.
 
-## ПЕРЕЛІК ВИКОРИСТАНИХ ДЖЕРЕЛ
-    
-[1]: https://ethereum.github.io/yellowpaper/paper.pdf
-[2]: https://bitcoin.org/bitcoin.pdf
-[3]: https://eips.ethereum.org/EIPS/eip-2535
-[4]: https://eips.ethereum.org/EIPS/eip-20
-[5]: https://eips.ethereum.org/EIPS/eip-712
-[6]: https://medium.com/q-blockchain/q-for-daos-e41b757b2af4
-[7]: https://medium.com/q-blockchain/beyond-code-is-law-decentralin-short-governance-in-web3-today-is-a-complete-mess-so-what-do-8134ef10e655
-[8]: https://thegraph.com/docs/en/
-[10]: https://inevitableeth.com/en/home/ethereum/world-computer#the-ethereum-ecosystem-de-fi
-[11]: https://noxx.substack.com/p/evm-deep-dives-the-path-to-shadowy-16e
-[12]: https://vitalik.ca/general/2019/12/07/quadratic.html
-[13]: https://www.gemini.com/cryptopedia/the-dao-hack-makerdao
-[14]: https://ethereum.org/en/web3/
-[15]: https://cointelegraph.com/news/tornado-cash-attacker-to-potentially-giveback-governance-control-proposal-reveals
-[16]: https://github.com/dl-solidity-library/dev-modules/blob/master/contracts/access-control/RBAC.sol
-
-1. Ethereum: A Secure Decentralised Generalised Transaction Ledger Berlin Version Beacfbd – 2022-10-24 [Електронний ресурс] – Dr. Gavin Wood Founder, Ethereum & Parity – Режим доступу до ресурсу [https://ethereum.github.io/yellowpaper/paper.pdf][1].
-
-2. Bitcoin: A Peer-to-Peer Electronic Cash System [Електронний ресурс] – Satoshi Nakamoto – Режим доступу до ресурсу: [https://bitcoin.org/bitcoin.pdf][2].
-
-3. ERC-2535: Diamonds, Multi-Facet Proxy, Ethereum Improvement Proposals, no. 2535, February 2020 [Електронний ресурс] –  Nick Mudge –  Режим доступу до ресурсу: [https://eips.ethereum.org/EIPS/eip-2535][3].
-
-4. ERC-20: Token Standard, Ethereum Improvement Proposals, no. 20, November 2015 [Електронний ресурс] –  Fabian Vogelsteller, Vitalik Buterin – Режим доступу до ресурсу:  [https://eips.ethereum.org/EIPS/eip-20][4].
-
-5. EIP-712: Typed structured data hashing and signing, Ethereum Improvement Proposals, no. 712, September 2017 [Електронний ресурс] – Remco Bloemen, Leonid Logvinov, Jacob Evans – Режим доступу до ресурсу: [https://eips.ethereum.org/EIPS/eip-712][5].
-
-6. Q for DAOs, August 2022 [Електронний ресурс] – Martin Schmidt – Режим доступу до ресурсу: [https://medium.com/q-blockchain/q-for-daos-e41b757b2af4][6].
-
-7. Beyond ‘Code is Law’ — Decentralized Governance in the Web3 World, December 2022 [Електронний ресурс] – Nicolas Biagosch – Режим доступу до ресурсу: [https://medium.com/q-blockchain/beyond-code-is-law-decentralin-short-governance-in-web3-today-is-a-complete-mess-so-what-do-8134ef10e655][7].
-
-8. The Graph Documentation [Електронний ресурс] – Режим доступу до ресурсу: [https://thegraph.com/docs/en/][8].
-
-9. Mastering Ethereum / [Andreas M. Antonopoulos, Gavin Wood]. – 2019, с. 127-128
-
-10. Inevitable Ethereum, The Ethereum Ecosystem: De-Fi [Електронний ресурс] – Haym Salomon – Режим доступу до ресурсу:   [https://inevitableeth.com/en/home/ethereum/world-computer#the-ethereum-ecosystem-de-fi][10].
-
-11. EVM Deep Dives: The Path to Shadowy Super Coder - Part 6, June 2022 [Електронний ресурс] – NOXX – Режим доступу до ресурсу: [https://noxx.substack.com/p/evm-deep-dives-the-path-to-shadowy-16e][11].
-
-12. Quadratic Payments: A Primer, December 2019 [Електронний ресурс] – Vitalik Buterin – Режим доступу до ресурсу: [https://vitalik.ca/general/2019/12/07/quadratic.html][12]. 
-
-13. What Was The DAO?, March 2019  [Електронний ресурс] – Cryptopedia Staff – Режим доступу до ресурсу: [https://www.gemini.com/cryptopedia/the-dao-hack-makerdao][13].
-
-14. Introduction to Web3 [Електронний ресурс] – Режим доступу до ресурсу: [https://ethereum.org/en/web3/][14]. 
-
-15. Tornado Cash attacker to potentially give back governance control, proposal reveals, May 20223 [Електронний ресурс] – Arijit Sarkar – Режим доступу до ресурсу: [https://cointelegraph.com/news/tornado-cash-attacker-to-potentially-giveback-governance-control-proposal-reveals][15].
-
-16. Role-Based Access Control, RBAC [Електронний ресурс] – Artem Chystiakov – [https://github.com/dl-solidity-library/dev-modules/blob/master/contracts/access-control/RBAC.sol][16].
-
 ## Адреси контрактів
 
 | index |        Contract        |                  Address                   |
@@ -141,7 +91,7 @@ API, який я розробив, відіграє ключову роль у �
 | 5     |  DAOMemberStorage   | 0xBB15aCB501Bc072EB27600e0051Daaf46A3B3315 |
 
 
-=================================================================================
+## Використання API
 
 Build completed: QmdHT5NE5fFaceAzydrW7MZdfTJFznrFkDNwXy4u9sn7oS
 
@@ -211,3 +161,54 @@ Request example:
   }
 }
 ```
+
+
+## ПЕРЕЛІК ВИКОРИСТАНИХ ДЖЕРЕЛ
+    
+[1]: https://ethereum.github.io/yellowpaper/paper.pdf
+[2]: https://bitcoin.org/bitcoin.pdf
+[3]: https://eips.ethereum.org/EIPS/eip-2535
+[4]: https://eips.ethereum.org/EIPS/eip-20
+[5]: https://eips.ethereum.org/EIPS/eip-712
+[6]: https://medium.com/q-blockchain/q-for-daos-e41b757b2af4
+[7]: https://medium.com/q-blockchain/beyond-code-is-law-decentralin-short-governance-in-web3-today-is-a-complete-mess-so-what-do-8134ef10e655
+[8]: https://thegraph.com/docs/en/
+[10]: https://inevitableeth.com/en/home/ethereum/world-computer#the-ethereum-ecosystem-de-fi
+[11]: https://noxx.substack.com/p/evm-deep-dives-the-path-to-shadowy-16e
+[12]: https://vitalik.ca/general/2019/12/07/quadratic.html
+[13]: https://www.gemini.com/cryptopedia/the-dao-hack-makerdao
+[14]: https://ethereum.org/en/web3/
+[15]: https://cointelegraph.com/news/tornado-cash-attacker-to-potentially-giveback-governance-control-proposal-reveals
+[16]: https://github.com/dl-solidity-library/dev-modules/blob/master/contracts/access-control/RBAC.sol
+
+1. Ethereum: A Secure Decentralised Generalised Transaction Ledger Berlin Version Beacfbd – 2022-10-24 [Електронний ресурс] – Dr. Gavin Wood Founder, Ethereum & Parity – Режим доступу до ресурсу [https://ethereum.github.io/yellowpaper/paper.pdf][1].
+
+2. Bitcoin: A Peer-to-Peer Electronic Cash System [Електронний ресурс] – Satoshi Nakamoto – Режим доступу до ресурсу: [https://bitcoin.org/bitcoin.pdf][2].
+
+3. ERC-2535: Diamonds, Multi-Facet Proxy, Ethereum Improvement Proposals, no. 2535, February 2020 [Електронний ресурс] –  Nick Mudge –  Режим доступу до ресурсу: [https://eips.ethereum.org/EIPS/eip-2535][3].
+
+4. ERC-20: Token Standard, Ethereum Improvement Proposals, no. 20, November 2015 [Електронний ресурс] –  Fabian Vogelsteller, Vitalik Buterin – Режим доступу до ресурсу:  [https://eips.ethereum.org/EIPS/eip-20][4].
+
+5. EIP-712: Typed structured data hashing and signing, Ethereum Improvement Proposals, no. 712, September 2017 [Електронний ресурс] – Remco Bloemen, Leonid Logvinov, Jacob Evans – Режим доступу до ресурсу: [https://eips.ethereum.org/EIPS/eip-712][5].
+
+6. Q for DAOs, August 2022 [Електронний ресурс] – Martin Schmidt – Режим доступу до ресурсу: [https://medium.com/q-blockchain/q-for-daos-e41b757b2af4][6].
+
+7. Beyond ‘Code is Law’ — Decentralized Governance in the Web3 World, December 2022 [Електронний ресурс] – Nicolas Biagosch – Режим доступу до ресурсу: [https://medium.com/q-blockchain/beyond-code-is-law-decentralin-short-governance-in-web3-today-is-a-complete-mess-so-what-do-8134ef10e655][7].
+
+8. The Graph Documentation [Електронний ресурс] – Режим доступу до ресурсу: [https://thegraph.com/docs/en/][8].
+
+9. Mastering Ethereum / [Andreas M. Antonopoulos, Gavin Wood]. – 2019, с. 127-128
+
+10. Inevitable Ethereum, The Ethereum Ecosystem: De-Fi [Електронний ресурс] – Haym Salomon – Режим доступу до ресурсу:   [https://inevitableeth.com/en/home/ethereum/world-computer#the-ethereum-ecosystem-de-fi][10].
+
+11. EVM Deep Dives: The Path to Shadowy Super Coder - Part 6, June 2022 [Електронний ресурс] – NOXX – Режим доступу до ресурсу: [https://noxx.substack.com/p/evm-deep-dives-the-path-to-shadowy-16e][11].
+
+12. Quadratic Payments: A Primer, December 2019 [Електронний ресурс] – Vitalik Buterin – Режим доступу до ресурсу: [https://vitalik.ca/general/2019/12/07/quadratic.html][12]. 
+
+13. What Was The DAO?, March 2019  [Електронний ресурс] – Cryptopedia Staff – Режим доступу до ресурсу: [https://www.gemini.com/cryptopedia/the-dao-hack-makerdao][13].
+
+14. Introduction to Web3 [Електронний ресурс] – Режим доступу до ресурсу: [https://ethereum.org/en/web3/][14]. 
+
+15. Tornado Cash attacker to potentially give back governance control, proposal reveals, May 20223 [Електронний ресурс] – Arijit Sarkar – Режим доступу до ресурсу: [https://cointelegraph.com/news/tornado-cash-attacker-to-potentially-giveback-governance-control-proposal-reveals][15].
+
+16. Role-Based Access Control, RBAC [Електронний ресурс] – Artem Chystiakov – [https://github.com/dl-solidity-library/dev-modules/blob/master/contracts/access-control/RBAC.sol][16].

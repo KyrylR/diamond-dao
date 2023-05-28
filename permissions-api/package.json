@@ -17,6 +17,7 @@
     "deploy-devnet": "graph deploy --node http://13.41.72.7:8020/ --ipfs http://13.41.72.7:5001/ $(grep PROJECT_NAME .env | cut -d '\"' -f2)"
   },
   "dependencies": {
+    "@dlsl/graph-modules": "^1.0.0-rc.2",
     "@graphprotocol/graph-cli": "0.49.0",
     "@graphprotocol/graph-ts": "0.30.0",
     "matchstick-as": "0.5.2"

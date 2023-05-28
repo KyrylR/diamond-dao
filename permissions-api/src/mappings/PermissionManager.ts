@@ -1,6 +1,5 @@
 import { Bytes, store } from "@graphprotocol/graph-ts";
-
-import { extendArray, reduceArray } from "../helpers/ArrayHelper";
+import { pushUnique, remove } from "@dlsl/graph-modules";
 
 import { Role } from "../../generated/schema";
 import {
@@ -17,12 +16,12 @@ import { getOrCreateResource } from "../entities/Resources";
 export function onGrantedRoles(event: GrantedRoles): void {
   let user = getOrCreateUser(event.params.to);
 
-  user.roles = extendArray<string>(user.roles, event.params.rolesToGrant);
+  user.roles = pushUnique<string>(user.roles, event.params.rolesToGrant);
 
   for (let i = 0; i < event.params.rolesToGrant.length; i++) {
     let role = getOrCreateRole(event.params.rolesToGrant[i]);
 
-    role.users = extendArray<Bytes>(role.users, [user.id]);
+    role.users = pushUnique<Bytes>(role.users, [user.id]);
 
     role.save();
   }
@@ -33,12 +32,12 @@ export function onGrantedRoles(event: GrantedRoles): void {
 export function onRevokedRoles(event: RevokedRoles): void {
   let user = getOrCreateUser(event.params.from);
 
-  user.roles = reduceArray<string>(user.roles, event.params.rolesToRevoke);
+  user.roles = remove<string>(user.roles, event.params.rolesToRevoke);
 
   for (let i = 0; i < event.params.rolesToRevoke.length; i++) {
     let role = getOrCreateRole(event.params.rolesToRevoke[i]);
 
-    role.users = reduceArray<Bytes>(role.users, [user.id]);
+    role.users = remove<Bytes>(role.users, [user.id]);
 
     if (role.resources.length == 0 && role.users.length == 0) {
       store.remove("Role", role.id);
@@ -57,13 +56,13 @@ export function onAddedPermissions(event: AddedPermissions): void {
 
   let role = getOrCreateRole(event.params.role);
 
-  role.resources = extendArray<string>(role.resources, [resource.id]);
+  role.resources = pushUnique<string>(role.resources, [resource.id]);
 
   role.save();
 
   for (let i = 0; i < event.params.permissionsToAdd.length; i++) {
     if (event.params.allowed) {
-      resource.allowedPermissions = extendArray<string>(
+      resource.allowedPermissions = pushUnique<string>(
         resource.allowedPermissions,
         [event.params.permissionsToAdd[i]]
       );
@@ -71,7 +70,7 @@ export function onAddedPermissions(event: AddedPermissions): void {
       continue;
     }
 
-    resource.disallowedPermission = extendArray<string>(
+    resource.disallowedPermission = pushUnique<string>(
       resource.disallowedPermission,
       [event.params.permissionsToAdd[i]]
     );
@@ -85,7 +84,7 @@ export function onRemovedPermissions(event: RemovedPermissions): void {
 
   for (let i = 0; i < event.params.permissionsToRemove.length; i++) {
     if (event.params.allowed) {
-      resource.allowedPermissions = reduceArray<string>(
+      resource.allowedPermissions = remove<string>(
         resource.allowedPermissions,
         [event.params.permissionsToRemove[i]]
       );
@@ -93,7 +92,7 @@ export function onRemovedPermissions(event: RemovedPermissions): void {
       continue;
     }
 
-    resource.disallowedPermission = reduceArray<string>(
+    resource.disallowedPermission = remove<string>(
       resource.disallowedPermission,
       [event.params.permissionsToRemove[i]]
     );

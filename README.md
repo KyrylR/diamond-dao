@@ -1,6 +1,6 @@
 # Diamond DAO
 
-[![Coverage Status (only for Smart Contracts)](https://codecov.io/gh/dl-solidity-library/dev-modules/graph/badge.svg)](https://codecov.io/gh/dl-solidity-library/dev-modules)
+[![Coverage Status (Only for smart Contracts)](https://codecov.io/gh/KyrylR/diamond-dao/graph/badge.svg)](https://codecov.io/gh/KyrylR/diamond-dao)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Загальний огляд

@@ -6,9 +6,9 @@ dataSources:
     name: DAOVault
     network: devnet
     source:
-      address: "0x648129bABEd8999C4Fe2f4DB5ff859A7eAE1B58B"
+      address: "0x4265F57803Fe21c34B86fe5E73A6AfFBc977bc24"
       abi: DAOVault
-      startBlock: 6344477
+      startBlock: 6378860
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -43,9 +43,9 @@ dataSources:
     name: DAOMemberStorage
     network: devnet
     source:
-      address: "0x648129bABEd8999C4Fe2f4DB5ff859A7eAE1B58B"
+      address: "0x4265F57803Fe21c34B86fe5E73A6AfFBc977bc24"
       abi: DAOMemberStorage
-      startBlock: 6344477
+      startBlock: 6378860
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -66,9 +66,9 @@ dataSources:
     name: DAOParameterStorage
     network: devnet
     source:
-      address: "0x648129bABEd8999C4Fe2f4DB5ff859A7eAE1B58B"
+      address: "0x4265F57803Fe21c34B86fe5E73A6AfFBc977bc24"
       abi: DAOParameterStorage
-      startBlock: 6344477
+      startBlock: 6378860
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6
@@ -91,9 +91,9 @@ dataSources:
     name: DAOVoting
     network: devnet
     source:
-      address: "0x648129bABEd8999C4Fe2f4DB5ff859A7eAE1B58B"
+      address: "0x4265F57803Fe21c34B86fe5E73A6AfFBc977bc24"
       abi: DAOVoting
-      startBlock: 6344477
+      startBlock: 6378860
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.6

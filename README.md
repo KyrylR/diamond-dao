@@ -93,6 +93,8 @@ API, який я розробив, відіграє ключову роль у �
 
 ## Використання API
 
+> :warning: **Stopped**
+
 Build completed: QmdHT5NE5fFaceAzydrW7MZdfTJFznrFkDNwXy4u9sn7oS
 
 Deployed to http://13.41.72.7:8000/subgraphs/name/dao-api/graphql
@@ -128,6 +130,8 @@ Request example:
 ```
 
 =================================================================================
+
+> :warning: **Stopped**
 
 Build completed: QmXtHY6CH6Gu3DE7Gs6L66SqJM8DmZqax4z9K2WmEucm79
 
